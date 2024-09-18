@@ -5,6 +5,7 @@ from aiogram.types import Message
 from sqlalchemy.orm import Session
 
 from database.engine import engine
+from spending_app.filters import MainPageFilter
 import spending_app.keyboards as kb
 from users_app.models import User
 
@@ -12,7 +13,7 @@ from users_app.models import User
 spending_router = Router()
 
 
-@spending_router.message(CommandStart())
+@spending_router.message(MainPageFilter())
 async def start_conversation(message: Message) -> None:
     user_id = message.from_user.id
     with Session(engine) as session:  # TODO create a async function for adding users
