@@ -16,6 +16,9 @@ class Category(Base):
 
     transactions: Mapped[List["Transaction"]] = relationship(back_populates="category")
 
+    def __str__(self):
+        return f'Category({self.name}, user={self.user_id})'
+
 
 class Transaction(Base):
     __tablename__ = 'transaction'
@@ -25,3 +28,6 @@ class Transaction(Base):
     category_id = mapped_column(ForeignKey('category.id'))
 
     category: Mapped[Category] = relationship(back_populates="transactions")
+
+    def __str__(self):
+        return f'Transaction({self.amount}, category={self.category_id})'
