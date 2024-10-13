@@ -99,3 +99,8 @@ async def get_transaction_amount(callback: CallbackQuery, state: FSMContext) -> 
     await callback.answer()
     await callback.message.edit_text(f'Введите сумму транзакции.\nПромежуточный итог: {randint(1, 500)}',
                                      reply_markup=await kb.NumberInlineKeyboard().release_keyboard())
+
+
+@spending_router.message(TransactionGroup.amount)
+async def save_transaction_amount_from_tg_keyboard(message: Message, state: FSMContext) -> None:
+    print(message.text)

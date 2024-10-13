@@ -18,7 +18,7 @@ start_keyboard = ReplyKeyboardMarkup(keyboard=[
 
 class BaseKeyboard:
     """
-    Base class for creating a keyboards.
+    Base class for creating keyboards.
     """
     def __init__(self):
         """
@@ -143,9 +143,9 @@ class CategoryGoBackInlineKeyboard(GoBackHeaderMixin, CategoryInlineKeyboard):
     pass
 
 
-class GoBackInlineKeyboard(GoBackHeaderMixin, BaseKeyboard):
+class GoBackInlineKeyboard(GoBackHeaderMixin, BaseInlineKeyboard):
     pass
 
 
-class NumberInlineKeyboard(NumbersMixin, BaseKeyboard):
+class NumberInlineKeyboard(NumbersMixin, BaseInlineKeyboard):
     pass
