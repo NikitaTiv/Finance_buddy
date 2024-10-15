@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from typing import Any, Optional
 from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
@@ -7,28 +8,23 @@ from sqlalchemy import select
 import buttons as bt
 from database.engine import engine
 from settings import MAX_CATEGORY_PER_USER
-from spending_app.keyboard_mixins import AddRemoveButtonMixin, GoBackHeaderMixin, NumbersMixin
+from spending_app.keyboard_mixins import AddRemoveButtonMixin, GoBackHeaderMixin, MainKeyboardMixin, NumbersMixin
 from spending_app.models import Category
 
 
-start_keyboard = ReplyKeyboardMarkup(keyboard=[
-    [bt.ReplyButton(**bt.ADD_EXPENSES_BUTTON_DICT)],
-], resize_keyboard=True)
-
-
-class BaseKeyboard:
+class BaseKeyboard(ABC):
     """
     Base class for creating keyboards.
     """
     def __init__(self):
+        self.builder = self.get_builder()
+
+    @abstractmethod
+    def get_builder(self):
         """
         Inheritors must override the builder attribute.
-
-        :raises NotImplementedError: if a inheritor doesnt have a builder.
         """
-        self.builder = None
-        if not self.builder:
-            raise NotImplementedError('Please specify a builder')
+        pass
 
     @property
     def number_per_row(self) -> list[int]:
@@ -53,7 +49,7 @@ class BaseKeyboard:
         Create header's buttons for a buttons panel.
 
         :param results: List with db elements.
-        :return: List with buttons.
+        :return: List of button instances.
         """
         return []
 
@@ -63,7 +59,7 @@ class BaseKeyboard:
         Create body's buttons for a buttons panel.
 
         :param results: List with db elements.
-        :return: List with buttons.
+        :return: List of button instances.
         """
         return []
 
@@ -72,7 +68,7 @@ class BaseKeyboard:
         Combine headers and body lists of buttons.
 
         :param results: List with db elements.
-        :return: List with buttons.
+        :return: List of button instances.
         """
         return self.prepare_headers(results) + self.prepare_content(results)
 
@@ -80,7 +76,7 @@ class BaseKeyboard:
         """
         Add buttons to the builder.
 
-        :param buttons_list: List of buttons.
+        :param buttons_list: List of button instances.
         """
         for button in buttons_list:
             getattr(button, 'is_applicable') and self.builder.add(button)
@@ -104,13 +100,19 @@ class BaseKeyboard:
 
 
 class BaseInlineKeyboard(BaseKeyboard):
-    def __init__(self):
-        self.builder = InlineKeyboardBuilder()
+    def get_builder(self):
+        return InlineKeyboardBuilder()
 
 
 class BaseReplyKeyboard(BaseKeyboard):
-    def __init__(self):
-        self.builder = ReplyKeyboardBuilder()
+    RESIZE_KEYBOARD = True
+
+    def get_builder(self):
+        return ReplyKeyboardBuilder()
+
+    async def release_keyboard(self) -> InlineKeyboardMarkup | ReplyKeyboardMarkup:
+        await self.fill_builder()
+        return self.builder.adjust(*self.number_per_row).as_markup(resize_keyboard=self.RESIZE_KEYBOARD)
 
 
 class CategoryInlineKeyboard(BaseInlineKeyboard):
@@ -148,4 +150,7 @@ class GoBackInlineKeyboard(GoBackHeaderMixin, BaseInlineKeyboard):
 
 
 class NumberInlineKeyboard(NumbersMixin, BaseInlineKeyboard):
+    pass
+
+class MainReplyKeyboard(MainKeyboardMixin, BaseReplyKeyboard):
     pass

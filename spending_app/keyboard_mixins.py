@@ -37,3 +37,12 @@ class NumbersMixin:
             bt.InlineButton(text='OK', callback_data=f'amount_category_OK'),
         ]
         return number_buttons + footer_buttons
+
+
+class MainKeyboardMixin:
+    @staticmethod
+    def prepare_content(results: list[Optional[Any]]) -> list[bt.InlineButton | bt.ReplyButton | None]:
+        return [
+            bt.ReplyButton(**bt.ADD_EXPENSES_BUTTON_DICT),
+            bt.ReplyButton(**bt.GET_REPORT_BUTTON_DICT),
+        ]
