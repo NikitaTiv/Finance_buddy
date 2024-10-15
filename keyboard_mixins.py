@@ -28,13 +28,13 @@ class NumbersMixin:
 
     @staticmethod
     def prepare_content(results: list[Optional[Any]]) -> list[bt.InlineButton | bt.ReplyButton | None]:
-        number_buttons = [bt.InlineButton(text=str(number), callback_data=f'amount_category_{number}') \
+        number_buttons = [bt.InlineButton(text=str(number), callback_data=f'amount_category_{number}')
                           for number in range(1, 10)]
         footer_buttons = [
-            bt.InlineButton(text='⬅️', callback_data=ReturnCallback(direction=bt.BACK_BUTTON_DICT \
+            bt.InlineButton(text='⬅️', callback_data=ReturnCallback(direction=bt.BACK_BUTTON_DICT
                                                                     .get('callback_data')).pack()),
-            bt.InlineButton(text=str(0), callback_data=f'amount_category_0'),
-            bt.InlineButton(text='OK', callback_data=f'amount_category_OK'),
+            bt.InlineButton(text=str(0), callback_data='amount_category_0'),
+            bt.InlineButton(text='OK', callback_data='amount_category_OK'),
         ]
         return number_buttons + footer_buttons
 

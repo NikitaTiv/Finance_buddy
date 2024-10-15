@@ -1,8 +1,7 @@
-from aiogram import F, Router, html
-from aiogram.filters import CommandStart
+from aiogram import F, Router
 from aiogram.types import CallbackQuery, Message
-from sqlalchemy import delete, insert, func
-from sqlalchemy.orm import Session, aliased
+from sqlalchemy import delete, insert
+from sqlalchemy.orm import Session
 from aiogram.fsm.context import FSMContext
 
 import buttons as bt
@@ -12,38 +11,25 @@ from spending_app.filters import ReturnCallback, ChooseCategoryMessageFilter
 import spending_app.keyboards as kb
 from spending_app.models import Category, Transaction
 from spending_app.state_groups import CategoryGroup, TransactionGroup
-from users_app.models import User
 
 
 spending_router = Router()
-
-
-@spending_router.message(CommandStart())
-async def start_conversation(message: Message) -> None:
-    user_id = message.from_user.id
-    with Session(engine) as session:  # TODO create a async context manager for adding users
-        if not session.query(User).filter(User.telegram_id == user_id).count():
-            user = User(telegram_id=user_id)
-            session.add(user)
-            session.commit()
-    await message.answer('Привет, это твой Finance buddy',
-                         reply_markup=await kb.MainReplyKeyboard().release_keyboard())
 
 
 @spending_router.callback_query(ReturnCallback.filter(F.direction == "cat"))
 @spending_router.message(ChooseCategoryMessageFilter())
 async def choose_category(request: Message | CallbackQuery) -> None:
     method = isinstance(request, Message) and request.answer or (await request.answer() and request.message.edit_text)
-    await method(GREETING_SPEND_APP_MESSAGE, reply_markup= \
-                 await kb.CategoryInlineKeyboardWithAddAndRemove(request.from_user).release_keyboard())
+    await method(GREETING_SPEND_APP_MESSAGE, reply_markup=await
+                 kb.CategoryInlineKeyboardWithAddAndRemove(request.from_user).release_keyboard())
 
 
 @spending_router.callback_query(F.data == bt.REMOVE_CATEGORY_BUTTON_DICT.get('callback_data'))
 async def select_category_for_removal(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.edit_text('Выберите категорию для удаления.',
-                                     reply_markup=await kb.RemoveCategoryInlineKeyboard(callback.from_user) \
-                                        .release_keyboard())
+                                     reply_markup=await
+                                     kb.RemoveCategoryInlineKeyboard(callback.from_user).release_keyboard())
 
 
 @spending_router.callback_query(F.data.startswith('remove_category_'))
@@ -54,7 +40,7 @@ async def remove_category(callback: CallbackQuery) -> None:
         session.execute(stmt)
         session.commit()
     await callback.answer('Категория удалена.')
-    await callback.message.edit_text(GREETING_SPEND_APP_MESSAGE, reply_markup= await \
+    await callback.message.edit_text(GREETING_SPEND_APP_MESSAGE, reply_markup=await
                                      kb.CategoryInlineKeyboardWithAddAndRemove(callback.from_user).release_keyboard())
 
 
@@ -73,8 +59,8 @@ async def get_category_name(message: Message, state: FSMContext) -> None:
     with Session(engine) as session:  # TODO create a async context manager for adding users
         session.execute(stmt)
         session.commit()
-    await message.answer(GREETING_SPEND_APP_MESSAGE, reply_markup= \
-                         await kb.CategoryInlineKeyboardWithAddAndRemove(message.from_user).release_keyboard())
+    await message.answer(GREETING_SPEND_APP_MESSAGE, reply_markup=await
+                         kb.CategoryInlineKeyboardWithAddAndRemove(message.from_user).release_keyboard())
     await state.clear()
 
 
@@ -85,14 +71,14 @@ async def add_transaction(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(TransactionGroup.amount)
     await callback.answer()
     await callback.message.answer('Введите сумму транзакции.',
-                                     reply_markup=await kb.NumberInlineKeyboard().release_keyboard())
+                                  reply_markup=await kb.NumberInlineKeyboard().release_keyboard())
 
 
 @spending_router.callback_query(F.data.startswith('amount_category_'))  # TODO isnt implemented
 async def get_transaction_amount(callback: CallbackQuery, state: FSMContext) -> None:
     from random import randint
-    amount = callback.data.split('_')[2]
-    data = await state.get_data()
+    amount = callback.data.split('_')[2]  # noqa
+    data = await state.get_data()  # noqa
     await callback.answer()
     await callback.message.edit_text(f'Введите сумму транзакции.\nПромежуточный итог: {randint(1, 500)}',
                                      reply_markup=await kb.NumberInlineKeyboard().release_keyboard())
@@ -108,23 +94,5 @@ async def save_transaction_amount_from_tg_keyboard(message: Message, state: FSMC
         session.commit()
     await state.clear()
     await message.answer('Транзакция успешно записана.')
-    await message.answer(GREETING_SPEND_APP_MESSAGE, reply_markup= \
-                         await kb.CategoryInlineKeyboardWithAddAndRemove(message.from_user).release_keyboard())
-
-
-@spending_router.message(F.text == bt.GET_REPORT_BUTTON_DICT['text'])
-async def get_report(message: Message) -> None:
-    transaction_alias = aliased(Transaction)
-    category_alias = aliased(Category)
-
-    with Session(engine) as session:
-        result = session.query(
-            category_alias.name.label('category'),
-            func.sum(transaction_alias.amount).label('total_amount')
-        ). \
-        filter(category_alias.user_id == message.from_user.id). \
-        join(category_alias, transaction_alias.category). \
-        group_by(category_alias.name). \
-        order_by(func.sum(transaction_alias.amount).desc()).all()
-    prepared_content = '\n'.join([f'{amount:_<15}{category}' for category, amount in result])
-    await message.answer(html.bold('Ваши расходы:\n') + prepared_content)
+    await message.answer(GREETING_SPEND_APP_MESSAGE, reply_markup=await
+                         kb.CategoryInlineKeyboardWithAddAndRemove(message.from_user).release_keyboard())

@@ -3,24 +3,43 @@ import logging
 import os
 import sys
 
-from dotenv import load_dotenv
 from aiogram import Bot, Dispatcher
+from aiogram.filters import CommandStart
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+from aiogram.types import Message
+from dotenv import load_dotenv
+from sqlalchemy.orm import Session
 
 from database.engine import engine
 from database.model_base import Base
+import keyboards as kb
 from spending_app.handlers import spending_router
-from spending_app.models import *  # for creating tables
+from report_app.handlers import report_router
+from spending_app.models import *  # noqa: F401, F403
+from users_app.models import User
+
 
 dp = Dispatcher()
 
 load_dotenv()
 
 
+@dp.message(CommandStart())
+async def start_conversation(message: Message) -> None:
+    user_id = message.from_user.id
+    with Session(engine) as session:  # TODO create a async context manager for adding users
+        if not session.query(User).filter(User.telegram_id == user_id).count():
+            user = User(telegram_id=user_id)
+            session.add(user)
+            session.commit()
+    await message.answer('Привет, это твой Finance buddy',
+                         reply_markup=await kb.MainReplyKeyboard().release_keyboard())
+
+
 async def main() -> None:
     bot = Bot(token=os.environ.get('TOKEN'), default=DefaultBotProperties(parse_mode=ParseMode.HTML))
-    dp.include_router(spending_router)
+    dp.include_routers(spending_router, report_router)
 
     await dp.start_polling(bot)
 
