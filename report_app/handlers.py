@@ -4,7 +4,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session, aliased
 
 import buttons as bt
-from database import engine
+from database.engine import engine
 from spending_app.models import Category, Transaction
 
 
