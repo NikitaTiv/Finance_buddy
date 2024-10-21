@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
@@ -15,18 +15,18 @@ class CategoryInlineKeyboard(BaseInlineKeyboard):
         super().__init__()
         self.user = user
 
-    async def make_db_query(self) -> list[Optional[Any]]:
+    async def make_db_query(self) -> list[Any]:
         with Session(engine) as session:  # TODO async query
             return session.scalars(select(Category).where(Category.user_id == self.user.id)).all()
 
     @staticmethod
-    def prepare_content(results: list[Optional[Any]]) -> list[bt.InlineButton | bt.ReplyButton | None]:
+    def prepare_content(results: list[Any]) -> list[bt.InlineButton | bt.ReplyButton | None]:
         return [bt.InlineButton(text=row.name, callback_data=f'category_{row.id}') for row in results]
 
 
 class RemoveCategoryInlineKeyboard(GoBackHeaderMixin, CategoryInlineKeyboard):
     @staticmethod
-    def prepare_content(results: list[Optional[Any]]) -> list[bt.InlineButton | bt.ReplyButton | None]:
+    def prepare_content(results: list[Any]) -> list[bt.InlineButton | bt.ReplyButton | None]:
         return [bt.InlineButton(text=row.name, callback_data=f'remove_category_{row.id}') for row in results]
 
 

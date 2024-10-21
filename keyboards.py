@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
@@ -12,11 +12,11 @@ class BaseKeyboard(ABC):
     """
     Base class for creating keyboards.
     """
-    def __init__(self):
+    def __init__(self) -> None:
         self.builder = self.get_builder()
 
     @abstractmethod
-    def get_builder(self):
+    def get_builder(self) -> InlineKeyboardBuilder | ReplyKeyboardBuilder:
         """
         Inheritors must override the builder attribute.
         """
@@ -31,7 +31,7 @@ class BaseKeyboard(ABC):
         """
         return [1,]
 
-    async def make_db_query(self) -> list[Optional[Any]]:
+    async def make_db_query(self) -> list[Any]:
         """
         Receives elems from DB to form buttons.
 
@@ -40,7 +40,7 @@ class BaseKeyboard(ABC):
         return []
 
     @staticmethod
-    def prepare_headers(results: list[Optional[Any]]) -> list[bt.InlineButton | bt.ReplyButton | None]:
+    def prepare_headers(results: list[Any]) -> list[bt.InlineButton | bt.ReplyButton | None]:
         """
         Create header's buttons for a buttons panel.
 
@@ -50,7 +50,7 @@ class BaseKeyboard(ABC):
         return []
 
     @staticmethod
-    def prepare_content(results: list[Optional[Any]]) -> list[bt.InlineButton | bt.ReplyButton | None]:
+    def prepare_content(results: list[Any]) -> list[bt.InlineButton | bt.ReplyButton | None]:
         """
         Create body's buttons for a buttons panel.
 
@@ -59,7 +59,7 @@ class BaseKeyboard(ABC):
         """
         return []
 
-    def prepare_buttons_list(self, results: list[Optional[Any]]) -> list[bt.InlineButton | bt.ReplyButton | None]:
+    def prepare_buttons_list(self, results: list[Any]) -> list[bt.InlineButton | bt.ReplyButton | None]:
         """
         Combine headers and body lists of buttons.
 
@@ -68,7 +68,7 @@ class BaseKeyboard(ABC):
         """
         return self.prepare_headers(results) + self.prepare_content(results)
 
-    def add_keyboard_buttons(self, buttons_list: list[bt.InlineButton | bt.ReplyButton | None]) -> None:
+    def add_keyboard_buttons(self, buttons_list: list[bt.InlineButton | bt.ReplyButton]) -> None:
         """
         Add buttons to the builder.
 
@@ -96,14 +96,14 @@ class BaseKeyboard(ABC):
 
 
 class BaseInlineKeyboard(BaseKeyboard):
-    def get_builder(self):
+    def get_builder(self) -> InlineKeyboardBuilder:
         return InlineKeyboardBuilder()
 
 
 class BaseReplyKeyboard(BaseKeyboard):
     RESIZE_KEYBOARD = True
 
-    def get_builder(self):
+    def get_builder(self) -> ReplyKeyboardBuilder:
         return ReplyKeyboardBuilder()
 
     async def release_keyboard(self) -> InlineKeyboardMarkup | ReplyKeyboardMarkup:

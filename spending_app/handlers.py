@@ -1,6 +1,6 @@
 from aiogram import F, Router
 from aiogram.types import CallbackQuery, Message
-from sqlalchemy import delete, insert
+from sqlalchemy import insert
 from sqlalchemy.orm import Session
 from aiogram.fsm.context import FSMContext
 
@@ -42,7 +42,8 @@ async def remove_category(callback: CallbackQuery) -> None:
         session.commit()
     await callback.answer('Категория удалена.')
     await callback.message.edit_text(GREETING_SPEND_APP_MESSAGE, reply_markup=await
-                                     spend_kb.CategoryInlineKeyboardWithAddAndRemove(callback.from_user).release_keyboard())
+                                     spend_kb.CategoryInlineKeyboardWithAddAndRemove(callback.from_user).
+                                     release_keyboard())
 
 
 @spending_router.callback_query(F.data == bt.ADD_CATEGORY_BUTTON_DICT.get('callback_data'))

@@ -18,7 +18,7 @@ class Category(Base):
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", cascade="all, delete-orphan",
                                                              back_populates="category")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'Category({self.name}, user={self.user_id})'
 
 
@@ -32,5 +32,5 @@ class Transaction(Base):
 
     category: Mapped[Category] = relationship("Category", back_populates="transactions")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f'Transaction({self.amount}, category={self.category_id})'
