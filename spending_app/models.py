@@ -12,7 +12,7 @@ class Category(Base):
     __tablename__ = 'category'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    name: Mapped[str] = mapped_column(String(30))
+    name: Mapped[str] = mapped_column(String(15))
     user_id = mapped_column(ForeignKey('users.id'))
 
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", cascade="all, delete-orphan",
@@ -26,7 +26,7 @@ class Transaction(Base):
     __tablename__ = 'transaction'
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    amount: Mapped[decimal.Decimal] = mapped_column(DECIMAL(10, 2))
+    amount: Mapped[decimal.Decimal] = mapped_column(DECIMAL(8, 2))
     created_at: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now(timezone.utc))
     category_id = mapped_column(ForeignKey('category.id'))
 

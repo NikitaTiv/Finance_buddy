@@ -1,3 +1,5 @@
+import re
+
 from aiogram import F, Router
 from aiogram.types import CallbackQuery, Message
 from sqlalchemy import insert
@@ -7,7 +9,7 @@ from aiogram.fsm.context import FSMContext
 import buttons as bt
 from database.engine import engine
 import keyboards as main_kb
-from spending_app.consts import GREETING_SPEND_APP_MESSAGE
+from spending_app.consts import ALLOWED_CATEGORY_LENGHT, GREETING_SPEND_APP_MESSAGE
 from spending_app.filters import ReturnCallback, ChooseCategoryMessageFilter
 import spending_app.keyboards as spend_kb
 from spending_app.models import Category, Transaction
@@ -56,7 +58,10 @@ async def add_category(callback: CallbackQuery, state: FSMContext) -> None:
 
 @spending_router.message(CategoryGroup.category_name)
 async def get_category_name(message: Message, state: FSMContext) -> None:
-    category_name = message.text
+    if len(category_name := message.text) > ALLOWED_CATEGORY_LENGHT:
+        await message.answer(f'Длина категории не может превышать {ALLOWED_CATEGORY_LENGHT} символов.',
+                             reply_markup=await main_kb.GoBackInlineKeyboard().release_keyboard())
+        return
     stmt = insert(Category).values(name=category_name, user_id=message.from_user.id)
     with Session(engine) as session:  # TODO create a async context manager for adding users
         session.execute(stmt)
@@ -88,7 +93,12 @@ async def get_transaction_amount(callback: CallbackQuery, state: FSMContext) -> 
 
 @spending_router.message(TransactionGroup.amount)
 async def save_transaction_amount_from_tg_keyboard(message: Message, state: FSMContext) -> None:
-    await state.update_data(amount=message.text.replace(',', '.'))
+    user_amount = message.text.replace(',', '.')
+    if not re.match(r'^\d{1,6}(\.\d{0,2})?$', user_amount):
+        await message.answer(f'Неправильный формат транзакции.',
+                             reply_markup=await spend_kb.NumberInlineKeyboard().release_keyboard())
+        return
+    await state.update_data(amount=user_amount)
     data = await state.get_data()
     with Session(engine) as session:
         transaction = Transaction(**data)

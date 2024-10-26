@@ -26,7 +26,7 @@ class ReplyButton(KeyboardButton, ApplicableMixin):
 
 
 # Spending app
-ADD_EXPENSES_BUTTON_DICT = {'text': '🫰 Добавить расходы'}
+ADD_EXPENSES_BUTTON_DICT = {'text': '🫰 Управление расходами'}
 GET_REPORT_BUTTON_DICT = {'text': '🧮 Получить отчет'}
 BACK_BUTTON_DICT = {'text': '⬅️ Вернуться назад', 'callback_data': 'cat'}
 ADD_CATEGORY_BUTTON_DICT = {'text': '➕ Добавить', 'callback_data': 'add_category'}
