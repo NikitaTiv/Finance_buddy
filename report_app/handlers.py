@@ -1,4 +1,3 @@
-import io
 from aiogram import F, Router
 from aiogram.types import Message
 from sqlalchemy import func
@@ -27,4 +26,3 @@ async def get_report(message: Message) -> None:
     file = generate_file_for_report(category_data, get_total_sum(category_data))
 
     await message.answer_photo(file)
-

@@ -14,13 +14,13 @@ from report_app.consts import (INDENTS_BETWEEN_LINES_IN_REPORT as indent_line,
 def get_total_sum(category_data: list[sqlalchemy.engine.row.Row]) -> Decimal:
     return sum([result[1] for result in category_data])
 
+
 def prepare_content(data: list[sqlalchemy.engine.row.Row], total_amount: Decimal) -> str:
     return ['Ваши расходы:'] + [f'{category:.<20}{amount}' for category, amount in data] + [f'Итого: {total_amount}']
 
 
-def generate_file_for_report(
-        category_data: list[sqlalchemy.engine.row.Row], total_amount: Decimal
-    ) -> types.BufferedInputFile:
+def generate_file_for_report(category_data: list[sqlalchemy.engine.row.Row],
+                             total_amount: Decimal) -> types.BufferedInputFile:
     text_list = prepare_content(category_data, total_amount)
     img = Image.new('RGB', (REPORT_WIDTH, len(text_list)*indent_line+additional_space), 'white')
     draw = ImageDraw.Draw(img)

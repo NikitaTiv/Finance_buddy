@@ -95,7 +95,7 @@ async def get_transaction_amount(callback: CallbackQuery, state: FSMContext) -> 
 async def save_transaction_amount_from_tg_keyboard(message: Message, state: FSMContext) -> None:
     user_amount = message.text.replace(',', '.')
     if not re.match(r'^\d{1,6}(\.\d{0,2})?$', user_amount):
-        await message.answer(f'Неправильный формат транзакции.',
+        await message.answer('Неправильный формат транзакции.',
                              reply_markup=await spend_kb.NumberInlineKeyboard().release_keyboard())
         return
     await state.update_data(amount=user_amount)
