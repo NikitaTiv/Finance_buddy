@@ -1,11 +1,10 @@
-import re
 from typing import Optional
 
 from aiogram.filters import BaseFilter
 from aiogram.filters.callback_data import CallbackData
 from aiogram.types import Message
 
-import buttons as bt
+from spending_app.buttons_dataclasses import AddExpensesButtonData
 
 
 class ReturnCallback(CallbackData, prefix="back"):
@@ -20,5 +19,4 @@ class ChooseCategoryMessageFilter(BaseFilter):
     Class for catching expenses's events.
     """
     async def __call__(self, message: Message) -> bool:
-        return (message.text == bt.ADD_EXPENSES_BUTTON_DICT.get('text')
-                or bool(re.search(r'Категория .+ успешно добавлена|удалена.', getattr(message, 'text', ''))))
+        return message.text == AddExpensesButtonData.text

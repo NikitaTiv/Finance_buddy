@@ -2,7 +2,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 
-import buttons as bt
+import buttons_base as bt
 from database.engine import engine
 from keyboards import BaseInlineKeyboard
 from settings import MAX_CATEGORY_PER_USER
@@ -33,7 +33,9 @@ class RemoveCategoryInlineKeyboard(GoBackHeaderMixin, CategoryInlineKeyboard):
 class CategoryInlineKeyboardWithAddAndRemove(AddRemoveButtonMixin, CategoryInlineKeyboard):
     @property
     def number_per_row(self) -> list[int]:
-        return 0 < len(self.results) < MAX_CATEGORY_PER_USER and [2, 1] or [1,]
+        if 0 < len(self.results) < MAX_CATEGORY_PER_USER:
+            return [2, 1]
+        return [1,]
 
 
 class CategoryGoBackInlineKeyboard(GoBackHeaderMixin, CategoryInlineKeyboard):

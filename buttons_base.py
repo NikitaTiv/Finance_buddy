@@ -1,5 +1,19 @@
 from typing import Any
+
 from aiogram.types import InlineKeyboardButton, KeyboardButton
+
+
+class GetAttrMixin:
+    @classmethod
+    def get_attrs(cls):
+        return {attr: getattr(cls, attr)
+                for attr in cls.__dict__
+                if not attr.startswith('__') and not callable(getattr(cls, attr))}
+
+
+class ClearCacheMixin:
+    """Add to a button dataclass to reset a fsm when a button called."""
+    pass
 
 
 class ApplicableMixin:
@@ -23,11 +37,3 @@ class ReplyButton(KeyboardButton, ApplicableMixin):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         ApplicableMixin.__init__(self, *args, **kwargs)
-
-
-# Spending app
-ADD_EXPENSES_BUTTON_DICT = {'text': '🫰 Управление расходами'}
-GET_REPORT_BUTTON_DICT = {'text': '🧮 Получить отчет'}
-BACK_BUTTON_DICT = {'text': '⬅️ Вернуться назад', 'callback_data': 'cat'}
-ADD_CATEGORY_BUTTON_DICT = {'text': '➕ Добавить', 'callback_data': 'add_category'}
-REMOVE_CATEGORY_BUTTON_DICT = {'text': '❌ Удалить', 'callback_data': 'remove_category'}

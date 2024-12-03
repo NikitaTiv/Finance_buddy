@@ -3,15 +3,15 @@ from aiogram.types import Message
 from sqlalchemy import func
 from sqlalchemy.orm import Session, aliased
 
-import buttons as bt
 from database.engine import engine
-from report_app.utils import generate_file_for_report, get_total_sum
+from report_app.buttons_dataclasses import GetReportButtonData
+from report_app.utils import ReportFileGenerator
 from spending_app.models import Category, Transaction
 
 report_router = Router()
 
 
-@report_router.message(F.text == bt.GET_REPORT_BUTTON_DICT['text'])
+@report_router.message(F.text == GetReportButtonData.text)
 async def get_report(message: Message) -> None:
     transaction_alias = aliased(Transaction)
     category_alias = aliased(Category)
@@ -23,6 +23,6 @@ async def get_report(message: Message) -> None:
             .join(category_alias, transaction_alias.category).group_by(category_alias.name). \
             order_by(func.sum(transaction_alias.amount).desc()).all()
 
-    file = generate_file_for_report(category_data, get_total_sum(category_data))
+    file = ReportFileGenerator.generate_file_for_report(category_data)
 
     await message.answer_photo(file)

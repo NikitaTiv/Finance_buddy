@@ -4,7 +4,7 @@ from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 
-import buttons as bt
+import buttons_base as bt
 from keyboard_mixins import GoBackHeaderMixin, MainKeyboardMixin
 
 

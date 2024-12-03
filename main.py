@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from database.engine import engine
 from database.model_base import Base
 import keyboards as kb
+from rewritten_base_classes import ClearCacheDispatcher
 from spending_app.handlers import spending_router
 from report_app.handlers import report_router
 from middlewares import UserRequiredMiddleware
@@ -19,12 +20,12 @@ from spending_app.models import *  # noqa: F401, F403
 from users_app.models import User
 
 
-dp = Dispatcher()
-
 load_dotenv()
 
-dp.message.outer_middleware(UserRequiredMiddleware())
-dp.callback_query.outer_middleware(UserRequiredMiddleware())
+dp: Dispatcher = ClearCacheDispatcher()
+
+dp.message.middleware(UserRequiredMiddleware())
+dp.callback_query.middleware(UserRequiredMiddleware())
 
 
 @dp.message(CommandStart())

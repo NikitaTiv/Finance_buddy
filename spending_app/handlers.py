@@ -6,9 +6,9 @@ from sqlalchemy import insert
 from sqlalchemy.orm import Session
 from aiogram.fsm.context import FSMContext
 
-import buttons as bt
 from database.engine import engine
 import keyboards as main_kb
+from spending_app.buttons_dataclasses import AddCategoryButtonData, RemoveCategoryButtonData
 from spending_app.consts import ALLOWED_CATEGORY_LENGHT, GREETING_SPEND_APP_MESSAGE
 from spending_app.filters import ReturnCallback, ChooseCategoryMessageFilter
 import spending_app.keyboards as spend_kb
@@ -22,12 +22,13 @@ spending_router = Router()
 @spending_router.callback_query(ReturnCallback.filter(F.direction == "cat"))
 @spending_router.message(ChooseCategoryMessageFilter())
 async def choose_category(request: Message | CallbackQuery) -> None:
-    method = isinstance(request, Message) and request.answer or (await request.answer() and request.message.edit_text)
+    method = (isinstance(request, Message) and request.answer or
+        (await request.answer() and request.message.edit_text))
     await method(GREETING_SPEND_APP_MESSAGE, reply_markup=await
                  spend_kb.CategoryInlineKeyboardWithAddAndRemove(request.from_user).release_keyboard())
 
 
-@spending_router.callback_query(F.data == bt.REMOVE_CATEGORY_BUTTON_DICT.get('callback_data'))
+@spending_router.callback_query(F.data == RemoveCategoryButtonData.callback_data)
 async def select_category_for_removal(callback: CallbackQuery) -> None:
     await callback.answer()
     await callback.message.edit_text('Выберите категорию для удаления.',
@@ -48,7 +49,7 @@ async def remove_category(callback: CallbackQuery) -> None:
                                      release_keyboard())
 
 
-@spending_router.callback_query(F.data == bt.ADD_CATEGORY_BUTTON_DICT.get('callback_data'))
+@spending_router.callback_query(F.data == AddCategoryButtonData.callback_data)
 async def add_category(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(CategoryGroup.category_name)
     await callback.answer()

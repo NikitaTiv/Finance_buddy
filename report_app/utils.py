@@ -5,31 +5,47 @@ from aiogram import types
 from PIL import Image, ImageDraw, ImageFont
 import sqlalchemy
 
-from report_app.consts import (INDENTS_BETWEEN_LINES_IN_REPORT as indent_line,
-                               INDENTS_FROM_LEFT_SIDE_IN_REPORT as indent_left_side,
-                               ADDITIONAL_SPACE_IN_REPORT as additional_space,
-                               REPORT_WIDTH)
 
+class ReportFileGenerator:
+    indent_between_lines = 20
+    indent_from_left_side = 30
+    report_widht = 230
+    additional_space = 40
 
-def get_total_sum(category_data: list[sqlalchemy.engine.row.Row]) -> Decimal:
-    return sum([result[1] for result in category_data])
+    @staticmethod
+    def get_total_amount(category_data: list[sqlalchemy.engine.row.Row]) -> Decimal:
+        return sum([result[1] for result in category_data])  # TODO move this to DB query
 
+    @staticmethod
+    def prepare_content(data: list[sqlalchemy.engine.row.Row], total_amount: Decimal) -> list[str]:
+        return [
+            'Ваши расходы:',
+            *[f'{category:.<20}{amount}' for category, amount in data],
+            f'Итого: {total_amount}'
+        ]
 
-def prepare_content(data: list[sqlalchemy.engine.row.Row], total_amount: Decimal) -> str:
-    return ['Ваши расходы:'] + [f'{category:.<20}{amount}' for category, amount in data] + [f'Итого: {total_amount}']
+    @classmethod
+    def draw_image(cls, list_with_calculations: list[str]) -> Image:
+        img = Image.new('RGB', (
+            cls.report_widht,
+            len(list_with_calculations)*cls.indent_between_lines+cls.additional_space
+        ), 'white')
+        draw = ImageDraw.Draw(img)
+        header_font = ImageFont.truetype("fonts/DroidSansBold.ttf")
+        content_font = ImageFont.truetype("fonts/DroidSansMono.ttf")
+        draw.text((cls.indent_from_left_side, cls.indent_between_lines),
+                  list_with_calculations.pop(0), fill='black', font=header_font)
+        for index, text in enumerate(list_with_calculations, start=2):
+            draw.text((cls.indent_from_left_side, index*cls.indent_between_lines),
+                      text, fill='black', font=content_font)
+        return img
 
-
-def generate_file_for_report(category_data: list[sqlalchemy.engine.row.Row],
-                             total_amount: Decimal) -> types.BufferedInputFile:
-    text_list = prepare_content(category_data, total_amount)
-    img = Image.new('RGB', (REPORT_WIDTH, len(text_list)*indent_line+additional_space), 'white')
-    draw = ImageDraw.Draw(img)
-    header_font = ImageFont.truetype("fonts/DroidSansBold.ttf")
-    content_font = ImageFont.truetype("fonts/DroidSansMono.ttf")
-    draw.text((indent_left_side, indent_line), text_list.pop(0), fill='black', font=header_font)
-    for index, text in enumerate(text_list, start=2):
-        draw.text((indent_left_side, index*indent_line), text, fill='black', font=content_font)
-    img_bytes = io.BytesIO()
-    img.save(img_bytes, format='png')
-    img_bytes.seek(0)
-    return types.BufferedInputFile(img_bytes.read(), filename="buffer img.jpg")
+    @classmethod
+    def generate_file_for_report(cls, category_data: list[sqlalchemy.engine.row.Row]) -> types.BufferedInputFile:
+        total_amount = cls.get_total_amount(category_data)
+        text_list = cls.prepare_content(category_data, total_amount)
+        img = cls.draw_image(text_list)
+        img_bytes = io.BytesIO()
+        img.save(img_bytes, format='png')
+        img_bytes.seek(0)
+        return types.BufferedInputFile(img_bytes.read(), filename="buffer img.jpg")
