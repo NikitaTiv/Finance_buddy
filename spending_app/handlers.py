@@ -8,9 +8,9 @@ from aiogram.fsm.context import FSMContext
 
 from database.engine import engine
 import keyboards as main_kb
-from spending_app.buttons_dataclasses import AddCategoryButtonData, RemoveCategoryButtonData
+from spending_app.buttons_dataclasses import AddCategoryButtonData, AddExpensesButtonData, RemoveCategoryButtonData
 from spending_app.consts import ALLOWED_CATEGORY_LENGHT, GREETING_SPEND_APP_MESSAGE
-from spending_app.filters import ReturnCallback, ChooseCategoryMessageFilter
+from spending_app.callbacks import ReturnCallback
 import spending_app.keyboards as spend_kb
 from spending_app.models import Category, Transaction
 from spending_app.state_groups import CategoryGroup, TransactionGroup
@@ -20,10 +20,9 @@ spending_router = Router()
 
 
 @spending_router.callback_query(ReturnCallback.filter(F.direction == "cat"))
-@spending_router.message(ChooseCategoryMessageFilter())
+@spending_router.message(F.text == AddExpensesButtonData.text)
 async def choose_category(request: Message | CallbackQuery) -> None:
-    method = (isinstance(request, Message) and request.answer or
-        (await request.answer() and request.message.edit_text))
+    method = isinstance(request, Message) and request.answer or await request.answer() and request.message.edit_text
     await method(GREETING_SPEND_APP_MESSAGE, reply_markup=await
                  spend_kb.CategoryInlineKeyboardWithAddAndRemove(request.from_user).release_keyboard())
 

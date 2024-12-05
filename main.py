@@ -7,12 +7,14 @@ from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from dotenv import load_dotenv
+import sentry_sdk
 from sqlalchemy.orm import Session
 
 from database.engine import engine
 from database.model_base import Base
 import keyboards as kb
 from rewritten_base_classes import ClearCacheDispatcher
+from settings import SENTRY_TOKEN
 from spending_app.handlers import spending_router
 from report_app.handlers import report_router
 from middlewares import UserRequiredMiddleware
@@ -21,6 +23,11 @@ from users_app.models import User
 
 
 load_dotenv()
+
+sentry_sdk.init(
+    dsn=SENTRY_TOKEN,
+    traces_sample_rate=1.0,
+)
 
 dp: Dispatcher = ClearCacheDispatcher()
 
@@ -50,4 +57,7 @@ async def main() -> None:
 if __name__ == "__main__":
     Base.metadata.create_all(engine)
     logging.basicConfig(level=logging.INFO, stream=sys.stdout)
+
+    sentry_sdk.profiler.start_profiler()
     asyncio.run(main())
+    sentry_sdk.profiler.stop_profiler()

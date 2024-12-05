@@ -22,6 +22,8 @@ pydantic==2.8.2
 pydantic_core==2.20.1
 pyflakes==3.2.0
 python-dotenv==1.0.1
+sentry-sdk==2.19.0
 SQLAlchemy==2.0.35
 typing_extensions==4.12.2
+urllib3==2.2.3
 yarl==1.11.1

@@ -28,7 +28,8 @@ class ClearCacheEventObserver(TelegramEventObserver):
 
 
 class ClearCacheDispatcher(Dispatcher):
-    def __init__(self,
+    def __init__(
+        self,
         *,
         storage: Optional[BaseStorage] = None,
         fsm_strategy: FSMStrategy = FSMStrategy.USER_IN_CHAT,

@@ -2,7 +2,7 @@ from typing import Any
 from report_app.buttons_dataclasses import GetReportButtonData
 from spending_app.buttons_dataclasses import (AddCategoryButtonData, AddExpensesButtonData, BackButtonButtonData,
                                               RemoveCategoryButtonData)
-from spending_app.filters import ReturnCallback
+from spending_app.callbacks import ReturnCallback
 
 import buttons_base as bt
 from settings import MAX_CATEGORY_PER_USER
