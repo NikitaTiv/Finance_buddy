@@ -1,7 +1,5 @@
 import asyncio
-import logging
 import os
-import sys
 
 from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart
@@ -56,7 +54,6 @@ async def main() -> None:
 
 if __name__ == "__main__":
     Base.metadata.create_all(engine)
-    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
     sentry_sdk.profiler.start_profiler()
     asyncio.run(main())

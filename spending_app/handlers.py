@@ -10,8 +10,9 @@ from database.engine import engine
 import keyboards as main_kb
 from spending_app.buttons_dataclasses import AddCategoryButtonData, AddExpensesButtonData, RemoveCategoryButtonData
 from spending_app.consts import ALLOWED_CATEGORY_LENGHT, GREETING_SPEND_APP_MESSAGE
-from spending_app.callbacks import ReturnCallback
-import spending_app.keyboards as spend_kb
+from spending_app.callbacks import ReturnCallback, ShowNextCallback, ShowPrevCallback
+from spending_app.keyboards import (CategoryInlineKeyboardWithAddAndRemove, NumberInlineKeyboard,
+                                    RemoveCategoryInlineKeyboard)
 from spending_app.models import Category, Transaction
 from spending_app.state_groups import CategoryGroup, TransactionGroup
 
@@ -19,20 +20,26 @@ from spending_app.state_groups import CategoryGroup, TransactionGroup
 spending_router = Router()
 
 
-@spending_router.callback_query(ReturnCallback.filter(F.direction == "cat"))
 @spending_router.message(F.text == AddExpensesButtonData.text)
+@spending_router.callback_query(ReturnCallback.filter(F.direction == "cat"))
+@spending_router.callback_query(ShowNextCallback.filter(F.direction == "cat"))
+@spending_router.callback_query(ShowPrevCallback.filter(F.direction == "cat"))
 async def choose_category(request: Message | CallbackQuery) -> None:
+    user_request = getattr(request, 'text', None) or request.data
     method = isinstance(request, Message) and request.answer or await request.answer() and request.message.edit_text
     await method(GREETING_SPEND_APP_MESSAGE, reply_markup=await
-                 spend_kb.CategoryInlineKeyboardWithAddAndRemove(request.from_user).release_keyboard())
+                 CategoryInlineKeyboardWithAddAndRemove(request.from_user, user_request).release_keyboard())
 
 
 @spending_router.callback_query(F.data == RemoveCategoryButtonData.callback_data)
+@spending_router.callback_query(ShowNextCallback.filter(F.direction == "rem_cat"))
+@spending_router.callback_query(ShowPrevCallback.filter(F.direction == "rem_cat"))
 async def select_category_for_removal(callback: CallbackQuery) -> None:
     await callback.answer()
-    await callback.message.edit_text('Выберите категорию для удаления.',
-                                     reply_markup=await
-                                     spend_kb.RemoveCategoryInlineKeyboard(callback.from_user).release_keyboard())
+    await callback.message. \
+        edit_text('Выберите категорию для удаления.',
+                  reply_markup=await RemoveCategoryInlineKeyboard(callback.from_user,
+                                                                  callback.data).release_keyboard())
 
 
 @spending_router.callback_query(F.data.startswith('remove_category_'))
@@ -44,8 +51,8 @@ async def remove_category(callback: CallbackQuery) -> None:
         session.commit()
     await callback.answer('Категория удалена.')
     await callback.message.edit_text(GREETING_SPEND_APP_MESSAGE, reply_markup=await
-                                     spend_kb.CategoryInlineKeyboardWithAddAndRemove(callback.from_user).
-                                     release_keyboard())
+                                     CategoryInlineKeyboardWithAddAndRemove(callback.from_user,
+                                                                            callback.data).release_keyboard())
 
 
 @spending_router.callback_query(F.data == AddCategoryButtonData.callback_data)
@@ -67,7 +74,7 @@ async def get_category_name(message: Message, state: FSMContext) -> None:
         session.execute(stmt)
         session.commit()
     await message.answer(GREETING_SPEND_APP_MESSAGE, reply_markup=await
-                         spend_kb.CategoryInlineKeyboardWithAddAndRemove(message.from_user).release_keyboard())
+                         CategoryInlineKeyboardWithAddAndRemove(message.from_user, message.text).release_keyboard())
     await state.clear()
 
 
@@ -78,7 +85,7 @@ async def add_transaction(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(TransactionGroup.amount)
     await callback.answer()
     await callback.message.answer('Введите сумму транзакции.',
-                                  reply_markup=await spend_kb.NumberInlineKeyboard().release_keyboard())
+                                  reply_markup=await NumberInlineKeyboard().release_keyboard())
 
 
 @spending_router.callback_query(F.data.startswith('amount_category_'))  # TODO isnt implemented
@@ -88,7 +95,7 @@ async def get_transaction_amount(callback: CallbackQuery, state: FSMContext) -> 
     data = await state.get_data()  # noqa
     await callback.answer()
     await callback.message.edit_text(f'Введите сумму транзакции.\nПромежуточный итог: {randint(1, 500)}',
-                                     reply_markup=await spend_kb.NumberInlineKeyboard().release_keyboard())
+                                     reply_markup=await NumberInlineKeyboard().release_keyboard())
 
 
 @spending_router.message(TransactionGroup.amount)
@@ -96,7 +103,7 @@ async def save_transaction_amount_from_tg_keyboard(message: Message, state: FSMC
     user_amount = message.text.replace(',', '.')
     if not re.match(r'^\d{1,6}(\.\d{0,2})?$', user_amount):
         await message.answer('Неправильный формат транзакции.',
-                             reply_markup=await spend_kb.NumberInlineKeyboard().release_keyboard())
+                             reply_markup=await NumberInlineKeyboard().release_keyboard())
         return
     await state.update_data(amount=user_amount)
     data = await state.get_data()
@@ -107,4 +114,4 @@ async def save_transaction_amount_from_tg_keyboard(message: Message, state: FSMC
     await state.clear()
     await message.answer('Транзакция успешно записана.')
     await message.answer(GREETING_SPEND_APP_MESSAGE, reply_markup=await
-                         spend_kb.CategoryInlineKeyboardWithAddAndRemove(message.from_user).release_keyboard())
+                         CategoryInlineKeyboardWithAddAndRemove(message.from_user, message.text).release_keyboard())

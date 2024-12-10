@@ -1,8 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from itertools import chain
+from sqlalchemy.orm.query import Query
+from typing import Any, Generator, Iterable, Optional
+
 from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
-
 
 import buttons_base as bt
 from keyboard_mixins import GoBackHeaderMixin, MainKeyboardMixin
@@ -23,67 +25,95 @@ class BaseKeyboard(ABC):
         pass
 
     @property
-    def number_per_row(self) -> list[int]:
+    def number_per_row(self) -> tuple[int]:
         """
         Allows to regulate the buttons quantity per rows.
 
         :return: List with number of elements per line.
         """
-        return [1,]
+        return (1,)
 
-    async def make_db_query(self) -> list[Any]:
+    async def make_db_query(self) -> Optional[Query]:
         """
         Receives elems from DB to form buttons.
 
         :return: List with db elements.
         """
-        return []
+        pass
 
-    @staticmethod
-    def prepare_headers(results: list[Any]) -> list[bt.InlineButton | bt.ReplyButton | None]:
+    def get_results_qty(self, query_obj: Query) -> int:
+        """
+        The method checks whether the object has the results_qty attribute,
+        if it does not, it makes a request to the database and creates.
+
+        :param query_obj: SQL Alchemy query object.
+        :return: Number of elements in the database.
+        """
+        if not (results_qty := getattr(self, 'results_qty', None)):
+            self.results_qty = query_obj.count()
+            return self.results_qty
+        return results_qty
+
+    def prepare_headers(self, db_query: Optional[Query]) -> \
+        Iterable[bt.InlineButton | bt.ReplyButton] | Generator[bt.InlineButton | bt.ReplyButton, None, None]:
         """
         Create header's buttons for a buttons panel.
 
-        :param results: List with db elements.
+        :param results: SQL Alchemy query object.
         :return: List of button instances.
         """
-        return []
+        yield from ()
 
-    @staticmethod
-    def prepare_content(results: list[Any]) -> list[bt.InlineButton | bt.ReplyButton | None]:
+    def prepare_content(self, db_query: Optional[Query]) -> \
+        Iterable[bt.InlineButton | bt.ReplyButton] | Generator[bt.InlineButton | bt.ReplyButton, None, None]:
         """
         Create body's buttons for a buttons panel.
 
-        :param results: List with db elements.
+        :param results: SQL Alchemy query object.
         :return: List of button instances.
         """
-        return []
+        yield from ()
 
-    def prepare_buttons_list(self, results: list[Any]) -> list[bt.InlineButton | bt.ReplyButton | None]:
+    def prepare_footer(self, db_query: Optional[Query]) -> \
+        Iterable[bt.InlineButton | bt.ReplyButton] | Generator[bt.InlineButton | bt.ReplyButton, None, None]:
         """
-        Combine headers and body lists of buttons.
+        Create footer's buttons for a buttons panel.
 
-        :param results: List with db elements.
+        :param results: SQL Alchemy query object.
         :return: List of button instances.
         """
-        return self.prepare_headers(results) + self.prepare_content(results)
+        yield from ()
 
-    def add_keyboard_buttons(self, buttons_list: list[bt.InlineButton | bt.ReplyButton]) -> None:
+    def prepare_buttons_list(self, db_query: Optional[Query]) \
+        -> chain[Iterable[bt.InlineButton | bt.ReplyButton] |
+                 Generator[bt.InlineButton | bt.ReplyButton, None, None]]:
+        """
+        Combine headers, body and footer lists of buttons.
+
+        :param results: SQL Alchemy query object.
+        :return: List of button instances.
+        """
+        return chain(self.prepare_headers(db_query),
+                     self.prepare_content(db_query),
+                     self.prepare_footer(db_query))
+
+    def add_keyboard_buttons(self, buttons_gen: chain[Iterable[bt.InlineButton | bt.ReplyButton] |
+                                                      Generator[bt.InlineButton | bt.ReplyButton, None, None]]) -> None:
         """
         Add buttons to the builder.
 
         :param buttons_list: List of button instances.
         """
-        for button in buttons_list:
+        for button in buttons_gen:
             getattr(button, 'is_applicable') and self.builder.add(button)
 
     async def fill_builder(self) -> None:
         """
         Method manager in which commands are launched to prepare the builder.
         """
-        self.results = await self.make_db_query()
-        buttons_list = self.prepare_buttons_list(self.results)
-        self.add_keyboard_buttons(buttons_list)
+        self.db_query = await self.make_db_query()
+        buttons_gen = self.prepare_buttons_list(self.db_query)
+        self.add_keyboard_buttons(buttons_gen)
 
     async def release_keyboard(self) -> InlineKeyboardMarkup | ReplyKeyboardMarkup:
         """

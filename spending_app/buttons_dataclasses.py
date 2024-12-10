@@ -9,7 +9,7 @@ class AddExpensesButtonData(ClearCacheMixin, GetAttrMixin):
 
 
 @dataclass
-class BackButtonButtonData(GetAttrMixin):
+class BackButtonData(GetAttrMixin):
     text: str = '⬅️ Вернуться назад'
     callback_data: str = 'cat'
 
@@ -23,4 +23,14 @@ class AddCategoryButtonData(GetAttrMixin):
 @dataclass
 class RemoveCategoryButtonData(GetAttrMixin):
     text: str = '❌ Удалить'
-    callback_data: str = 'remove_category'
+    callback_data: str = 'rem_cat'
+
+
+@dataclass
+class ShowNextCategoriesButtonData(GetAttrMixin):
+    text: str = 'Показать еще 🔽'
+
+
+@dataclass
+class ShowPrevCategoriesButtonData(GetAttrMixin):
+    text: str = 'Предыдущие категории 🔼'

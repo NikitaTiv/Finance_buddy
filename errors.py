@@ -1,0 +1,2 @@
+class IncorrectlyСonfiguredException(Exception):
+    pass

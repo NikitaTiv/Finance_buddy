@@ -17,7 +17,7 @@ class ReportFileGenerator:
         return sum([result[1] for result in category_data])  # TODO move this to DB query
 
     @staticmethod
-    def prepare_content(data: list[sqlalchemy.engine.row.Row], total_amount: Decimal) -> list[str]:
+    def prepare_report_content(data: list[sqlalchemy.engine.row.Row], total_amount: Decimal) -> list[str]:
         return [
             'Ваши расходы:',
             *[f'{category:.<20}{amount}' for category, amount in data],
@@ -43,7 +43,7 @@ class ReportFileGenerator:
     @classmethod
     def generate_file_for_report(cls, category_data: list[sqlalchemy.engine.row.Row]) -> types.BufferedInputFile:
         total_amount = cls.get_total_amount(category_data)
-        text_list = cls.prepare_content(category_data, total_amount)
+        text_list = cls.prepare_report_content(category_data, total_amount)
         img = cls.draw_image(text_list)
         img_bytes = io.BytesIO()
         img.save(img_bytes, format='png')
