@@ -11,16 +11,17 @@ from aiogram.fsm.storage.base import BaseStorage, BaseEventIsolation
 from aiogram.fsm.storage.memory import MemoryStorage, DisabledEventIsolation
 from aiogram.types import TelegramObject
 
-from utils import MessageCacheChecker
+from buttons_base import ClearCacheMeta
 
 
 class ClearCacheEventObserver(TelegramEventObserver):
     async def trigger(self, event: TelegramObject, **kwargs: Any) -> Any:
         state: FSMContext = kwargs.pop('state')
         if state and await state.get_state():
-            message_text = getattr(event.message, 'text', None)
-            callback = getattr(event.callback_query, 'data', None)
-            if MessageCacheChecker(message_text, callback).state_should_be_cleared():
+            message_text = getattr(event.message, 'text', '')
+            callback = getattr(event.callback_query, 'data', '')
+            if (not message_text and not callback.startswith('amount_category')
+                or message_text in ClearCacheMeta.no_cache_messages):
                 kwargs.pop('raw_state')
                 await state.clear()
         kwargs['state'] = state

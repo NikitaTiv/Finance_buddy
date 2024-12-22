@@ -1,4 +1,5 @@
-from typing import Any
+from collections import defaultdict
+from typing import Any, Tuple
 
 from aiogram.types import InlineKeyboardButton, KeyboardButton
 
@@ -11,7 +12,16 @@ class GetAttrMixin:
                 if not attr.startswith('__') and not callable(getattr(cls, attr))}
 
 
-class ClearCacheMixin:
+class ClearCacheMeta(type):
+    def __new__(cls, name: str, bases: Tuple[Any], attrs: dict[str, Any]) -> 'ClearCacheMixin':
+        if not hasattr(cls, 'no_cache_messages'):
+            cls.no_cache_messages = []
+        if msg := attrs.get('text'):
+            cls.no_cache_messages.append(msg)
+        return super().__new__(cls, name, bases, attrs)
+
+
+class ClearCacheMixin(metaclass=ClearCacheMeta):
     """Add to a button dataclass to reset a fsm when a button called."""
     pass
 

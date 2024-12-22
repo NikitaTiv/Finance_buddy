@@ -146,6 +146,5 @@ async def save_transaction_amount_from_tg_keyboard(message: Message, state: FSMC
         session.add(transaction)
         session.commit()
     await state.clear()
-    await message.answer('Транзакция успешно записана.')
     await message.answer(GREETING_SPEND_APP_MESSAGE, reply_markup=await
                          CategoryInlineKeyboardWithAddAndRemove(message.from_user, message.text).release_keyboard())
