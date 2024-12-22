@@ -2,11 +2,12 @@ from glob import glob
 import inspect
 import re
 import sys
+from typing import Optional
 
 from buttons_base import ClearCacheMixin
 
 
-class MessageCacheChecker:  # TODO Use cache
+class MessageCacheChecker:
     """
     Prevents reply buttons from being blocked due to cache.
     Gets all objects that inherit from the ClearCacheMixin class and
@@ -16,8 +17,9 @@ class MessageCacheChecker:  # TODO Use cache
     :return: Should the cache be cleared.
     :rtype: bool
     """
-    def __init__(self, message: str) -> None:
+    def __init__(self, message: Optional[str], callback: Optional[str]) -> None:
         self.message = message
+        self.callback = callback
 
     @staticmethod
     def convert_paths(py_button_modules: list[str]) -> map:
@@ -25,20 +27,30 @@ class MessageCacheChecker:  # TODO Use cache
 
     @classmethod
     def get_eligible_modules(cls) -> map:
-        py_button_modules = glob('**/buttons_dataclasses.py', recursive=True)
-        return cls.convert_paths(py_button_modules)
+        button_modules = glob('**/buttons_dataclasses.py', recursive=True)
+        return cls.convert_paths(button_modules)
 
-    @staticmethod
-    def filter_classes(classes: list[object]):
-        return filter(lambda obj: (getattr(obj, 'text', None) and issubclass(obj, ClearCacheMixin)), classes)
+    def is_valid_class(self, obj) -> bool:
+        return hasattr(obj, 'text') and issubclass(obj, ClearCacheMixin)
 
-    @classmethod
-    def get_classes(cls, py_modules: map) -> filter:
+    def filter_classes(self, classes: list[object]) -> filter:
+        return filter(self.is_valid_class, classes)
+
+    def get_classes(self, py_modules: map) -> filter:
         classes = []
         for module in py_modules:
             classes.extend(map(lambda x: x[1], inspect.getmembers(sys.modules[module], inspect.isclass)))
-        return cls.filter_classes(classes)
+        return self.filter_classes(classes)
 
     def state_should_be_cleared(self) -> bool:
-        py_modules = self.get_eligible_modules()
-        return self.message in map(lambda x: x.text, self.get_classes(py_modules))
+        if self.callback and self.callback.startswith('amount_category'):
+            return False
+
+        if not self.message:
+            return True
+
+        button_modules = self.get_eligible_modules()
+
+        button_classes = self.get_classes(button_modules)
+
+        return any(self.message == button_cls.text for button_cls in button_classes)

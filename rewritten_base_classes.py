@@ -18,8 +18,9 @@ class ClearCacheEventObserver(TelegramEventObserver):
     async def trigger(self, event: TelegramObject, **kwargs: Any) -> Any:
         state: FSMContext = kwargs.pop('state')
         if state and await state.get_state():
-            message_text = event.message and event.message.text or event.callback_query.data
-            if MessageCacheChecker(message_text).state_should_be_cleared():
+            message_text = getattr(event.message, 'text', None)
+            callback = getattr(event.callback_query, 'data', None)
+            if MessageCacheChecker(message_text, callback).state_should_be_cleared():
                 kwargs.pop('raw_state')
                 await state.clear()
         kwargs['state'] = state

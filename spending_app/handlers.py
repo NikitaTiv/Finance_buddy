@@ -1,3 +1,4 @@
+from collections import namedtuple
 import re
 
 from aiogram import F, Router
@@ -84,18 +85,51 @@ async def add_transaction(callback: CallbackQuery, state: FSMContext) -> None:
     await state.update_data(category_id=callback.data.split('_')[1])
     await state.set_state(TransactionGroup.amount)
     await callback.answer()
-    await callback.message.answer('Введите сумму транзакции.',
+    await callback.message.edit_text('Введите сумму транзакции.',
                                   reply_markup=await NumberInlineKeyboard().release_keyboard())
 
 
-@spending_router.callback_query(F.data.startswith('amount_category_'))  # TODO isnt implemented
+@spending_router.callback_query(F.data.startswith('amount_category_'))
 async def get_transaction_amount(callback: CallbackQuery, state: FSMContext) -> None:
-    from random import randint
-    amount = callback.data.split('_')[2]  # noqa
-    data = await state.get_data()  # noqa
-    await callback.answer()
-    await callback.message.edit_text(f'Введите сумму транзакции.\nПромежуточный итог: {randint(1, 500)}',
-                                     reply_markup=await NumberInlineKeyboard().release_keyboard())
+    async def handle_ok_input(amount: str, data: dict, state: FSMContext, callback: CallbackQuery) -> namedtuple:
+        if not amount:
+            return Response(alert='Значение не может быть пустым.')
+        if not data.get('category_id'):
+            await state.clear()
+            return Response(message='Cообщение устарело и помещено в архив.\nВвод невозможен.')
+        if not re.match(r'^\d{1,6}(\.\d{0,2})?$', amount):
+            return Response(alert='Неправильный формат транзакции.')
+
+        with Session(engine) as session:
+            transaction = Transaction(**data)
+            session.add(transaction)
+            session.commit()
+
+        await state.clear()
+        return Response(alert='Транзакция успешно записана.', message=GREETING_SPEND_APP_MESSAGE, \
+            keyboard=CategoryInlineKeyboardWithAddAndRemove(callback.from_user, callback.data))
+
+    Response = namedtuple('PreparedResponse', ('alert', 'message', 'keyboard'),
+        defaults=('', 'Введите значение транзакции.\nПроможуточный итог: {}', NumberInlineKeyboard())
+    )
+    data = await state.get_data()
+    current_amount = data.get('amount', '')
+    user_input = callback.data.split('_')[2]
+
+    if user_input == 'OK':
+        response_obj = await handle_ok_input(current_amount, data, state, callback)
+    elif user_input == 'clear':
+        await state.update_data(amount='')
+        current_amount = ''
+        response_obj = Response(alert='Ваш ввод был сброшен.')
+    else:
+        current_amount += user_input
+        await state.update_data(amount=current_amount)
+        response_obj = Response()
+
+    await callback.answer(response_obj.alert)
+    await callback.message.edit_text(response_obj.message.format(current_amount), reply_markup=await
+                                     response_obj.keyboard.release_keyboard())
 
 
 @spending_router.message(TransactionGroup.amount)

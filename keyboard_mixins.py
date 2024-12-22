@@ -38,9 +38,9 @@ class NumbersMixin:
                     for number in range(1, 10))
 
     def prepare_footer(self, db_query: Optional[Query]) -> Generator[bt.InlineButton, None, None]:
-        yield bt.InlineButton(text='⬅️', callback_data=ReturnCallback(
-            direction=BackButtonData.callback_data).pack())
+        yield bt.InlineButton(text='.', callback_data='amount_category_.')
         yield bt.InlineButton(text=str(0), callback_data='amount_category_0')
+        yield bt.InlineButton(text='Сброс', callback_data='amount_category_clear')
         yield bt.InlineButton(text='OK', callback_data='amount_category_OK')
 
 

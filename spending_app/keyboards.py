@@ -73,5 +73,7 @@ class CategoryGoBackInlineKeyboard(GoBackHeaderMixin, CategoryInlineKeyboard):
     pass
 
 
-class NumberInlineKeyboard(NumbersMixin, BaseInlineKeyboard):
-    pass
+class NumberInlineKeyboard(NumbersMixin, GoBackHeaderMixin, BaseInlineKeyboard):
+    @property
+    def number_per_row(self) -> tuple[int]:
+        return (1, 3)

@@ -1,5 +1,7 @@
 import asyncio
+import logging
 import os
+import sys
 
 from aiogram import Bot, Dispatcher
 from aiogram.filters import CommandStart
@@ -12,6 +14,7 @@ from database.engine import engine
 from database.model_base import Base
 import keyboards as kb
 from rewritten_base_classes import ClearCacheDispatcher
+from sessions import SkipTelegramBadRequestSession
 from settings import SENTRY_TOKEN
 from spending_app.handlers import spending_router
 from report_app.handlers import report_router
@@ -46,7 +49,7 @@ async def start_conversation(message: Message) -> None:
 
 
 async def main() -> None:
-    bot = Bot(token=os.environ.get('TOKEN'))
+    bot = Bot(token=os.environ.get('TOKEN'), session=SkipTelegramBadRequestSession())
     dp.include_routers(spending_router, report_router)
 
     await dp.start_polling(bot)
@@ -54,6 +57,7 @@ async def main() -> None:
 
 if __name__ == "__main__":
     Base.metadata.create_all(engine)
+    logging.basicConfig(level=logging.INFO, stream=sys.stdout)
 
     sentry_sdk.profiler.start_profiler()
     asyncio.run(main())
