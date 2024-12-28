@@ -1,4 +1,4 @@
-from typing import Generator, Iterable
+from typing import Generator, Iterable, Optional
 from sqlalchemy.orm import Session, aliased
 from sqlalchemy.orm.query import Query
 from sqlalchemy import func
@@ -7,9 +7,11 @@ import buttons_base as bt
 from database.engine import engine
 from keyboards import BaseInlineKeyboard
 from settings import MAX_CATEGORY_PER_USER, MAX_CATEGORY_PER_PAGE
-from keyboard_mixins import AddRemoveButtonMixin, GoBackHeaderMixin, NumbersMixin
-from spending_app.buttons_dataclasses import RemoveCategoryButtonData, ShowNextCategoriesButtonData, ShowPrevCategoriesButtonData
-from spending_app.callbacks import ShowNextCallback, ShowPrevCallback
+from keyboard_mixins import AddRemoveButtonMixin, GoBackToCatsHeaderMixin, GoBackToLimitsHeaderMixin, NumbersMixin
+from spending_app.buttons_dataclasses import (BackToLimitsButtonData, LimitsButtonData, RemoveCategoryButtonData, ShowNextCategoriesButtonData,
+                                              ShowPrevCategoriesButtonData)
+from spending_app.callbacks import (EditLimitCallback, LimitCallback, RemoveLimitCallback, ShowNextCallback,
+                                    ShowPrevCallback)
 from spending_app.models import Category, Transaction
 from users_app.models import User
 
@@ -39,7 +41,20 @@ class CategoryInlineKeyboard(BaseInlineKeyboard):
         return (bt.InlineButton(text=row.name, callback_data=f'category_{row.id}')
                 for row in self.limit_db_query(db_query))
 
+    @staticmethod
+    def try_to_convert_request(request):
+        convert_dict = {
+            LimitsButtonData.text: BackToLimitsButtonData.callback_data
+        }
+        return convert_dict.get(request, request)
+
     def prepare_footer(self, results: Query) -> Generator[bt.InlineButton, None, None]:
+        directions = (
+            RemoveCategoryButtonData.callback_data,
+            BackToLimitsButtonData.callback_data,
+        )
+        direction = next((dir for dir in directions if dir in self.try_to_convert_request(self.user_request)), 'cat')
+
         if self.is_show_next_request:
             button_text = ShowPrevCategoriesButtonData
             button_callback_data = ShowPrevCallback
@@ -47,14 +62,12 @@ class CategoryInlineKeyboard(BaseInlineKeyboard):
             button_text = ShowNextCategoriesButtonData
             button_callback_data = ShowNextCallback
 
-        direction = rem_data if (rem_data := RemoveCategoryButtonData.callback_data) in self.user_request else 'cat'
-
         yield bt.InlineButton(is_applicable=self.get_results_qty(results) > MAX_CATEGORY_PER_PAGE,
                               text=button_text.text,
                               callback_data=button_callback_data(direction=direction).pack())
 
 
-class RemoveCategoryInlineKeyboard(GoBackHeaderMixin, CategoryInlineKeyboard):
+class RemoveCategoryInlineKeyboard(GoBackToCatsHeaderMixin, CategoryInlineKeyboard):
     def prepare_content(self, db_query: Query) -> Iterable[bt.InlineButton]:
         return (bt.InlineButton(text=row.name, callback_data=f'remove_category_{row.id}')
                 for row in self.limit_db_query(db_query))
@@ -69,11 +82,29 @@ class CategoryInlineKeyboardWithAddAndRemove(AddRemoveButtonMixin, CategoryInlin
         return (1,)
 
 
-class CategoryGoBackInlineKeyboard(GoBackHeaderMixin, CategoryInlineKeyboard):
+class CategoryGoBackInlineKeyboard(GoBackToCatsHeaderMixin, CategoryInlineKeyboard):
     pass
 
 
-class NumberInlineKeyboard(NumbersMixin, GoBackHeaderMixin, BaseInlineKeyboard):
+class NumberInlineKeyboard(NumbersMixin, GoBackToCatsHeaderMixin, BaseInlineKeyboard):
     @property
     def number_per_row(self) -> tuple[int]:
         return (1, 3)
+
+
+class LimitCategoryInlineKeyboard(CategoryInlineKeyboard):
+    def prepare_content(self, db_query: Query) -> Iterable[bt.InlineButton]:
+        return (bt.InlineButton(text=f'{row.name} - {row.limit or "❌"}', callback_data= \
+                                LimitCallback(direction=str(row.id)).pack()) for row in self.limit_db_query(db_query))
+
+
+class ViewLimitInlineKeyboard(GoBackToLimitsHeaderMixin, BaseInlineKeyboard):
+    def __init__(self, category_id) -> None:
+        super().__init__()
+        self.category_id = category_id
+
+    def prepare_content(self, db_query: Optional[Query]) -> Generator[bt.InlineButton, None, None]:
+        yield bt.InlineButton(text='Редактировать лимит 📝', callback_data= \
+                              EditLimitCallback(direction=str(self.category_id)).pack())
+        yield bt.InlineButton(text='Удалить лимит 🗑', callback_data= \
+                              RemoveLimitCallback(direction=str(self.category_id)).pack())

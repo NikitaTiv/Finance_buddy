@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
 from buttons_base import ClearCacheMixin, GetAttrMixin
@@ -9,9 +10,28 @@ class AddExpensesButtonData(ClearCacheMixin, GetAttrMixin):
 
 
 @dataclass
-class BackButtonData(GetAttrMixin):
+class LimitsButtonData(ClearCacheMixin, GetAttrMixin):
+    text: str = '🚧 Лимиты'
+
+
+@dataclass
+class BaseBackDataClass(GetAttrMixin, ABC):
     text: str = '⬅️ Вернуться назад'
+
+    @property
+    @abstractmethod
+    def callback_data(self) -> str:
+        pass
+
+
+@dataclass
+class BackToCatsButtonData(BaseBackDataClass):
     callback_data: str = 'cat'
+
+
+@dataclass
+class BackToLimitsButtonData(BaseBackDataClass):
+    callback_data: str = 'limit'
 
 
 @dataclass

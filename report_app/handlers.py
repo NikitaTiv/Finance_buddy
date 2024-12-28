@@ -18,11 +18,13 @@ async def get_report(message: Message) -> None:
 
     with Session(engine) as session:
         category_data = session.query(
-            category_alias.name.label('category'), func.sum(transaction_alias.amount).label('total_amount')
+            category_alias.name.label('category'),
+            category_alias.limit.label('limit'),
+            func.sum(transaction_alias.amount).label('total_amount')
         ).filter(category_alias.user_id.is_(getattr(message.from_user, 'id'))) \
             .join(category_alias, transaction_alias.category).group_by(category_alias.name). \
             order_by(func.sum(transaction_alias.amount).desc()).all()
 
-    file = ReportFileGenerator.generate_file_for_report(category_data)
+    file = ReportFileGenerator(data=category_data).generate_file_for_report()
 
     await message.answer_photo(file)

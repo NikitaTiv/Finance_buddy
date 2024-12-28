@@ -1,3 +1,4 @@
+from abc import ABC, abstractmethod
 from sqlalchemy.orm.query import Query
 
 from typing import Generator, Iterable, Optional
@@ -6,15 +7,28 @@ import buttons_base as bt
 from errors import IncorrectlyСonfiguredException
 from report_app.buttons_dataclasses import GetReportButtonData
 from settings import MAX_CATEGORY_PER_USER
-from spending_app.buttons_dataclasses import (AddCategoryButtonData, AddExpensesButtonData, BackButtonData,
-                                              RemoveCategoryButtonData)
+from spending_app.buttons_dataclasses import (AddCategoryButtonData, AddExpensesButtonData, BackToCatsButtonData,
+                                              BackToLimitsButtonData, LimitsButtonData, RemoveCategoryButtonData)
 from spending_app.callbacks import ReturnCallback
 
 
-class GoBackHeaderMixin:
+class BaseBackHeaderMixin(ABC):
+    @property
+    @abstractmethod
+    def BACK_DIRECTION(self):
+        pass
+
     def prepare_headers(self, db_query: Optional[Query]) -> Iterable[bt.InlineButton]:
-        yield bt.InlineButton(text=BackButtonData.text, callback_data=ReturnCallback(
-            direction=BackButtonData.callback_data).pack())
+        yield bt.InlineButton(text=self.BACK_DIRECTION.text, callback_data=ReturnCallback(
+            direction=self.BACK_DIRECTION.callback_data).pack())
+
+
+class GoBackToCatsHeaderMixin(BaseBackHeaderMixin):
+    BACK_DIRECTION = BackToCatsButtonData
+
+
+class GoBackToLimitsHeaderMixin(BaseBackHeaderMixin):
+    BACK_DIRECTION = BackToLimitsButtonData
 
 
 class AddRemoveButtonMixin:
@@ -48,3 +62,4 @@ class MainKeyboardMixin:
     def prepare_content(self, db_query: Optional[Query]) -> Generator[bt.ReplyButton, None, None]:
         yield bt.ReplyButton(**AddExpensesButtonData.get_attrs())
         yield bt.ReplyButton(**GetReportButtonData.get_attrs())
+        yield bt.ReplyButton(**LimitsButtonData.get_attrs())

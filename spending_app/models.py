@@ -14,6 +14,7 @@ class Category(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(15))
     user_id = mapped_column(ForeignKey('users.id'))
+    limit: Mapped[int] = mapped_column(nullable=True)
 
     transactions: Mapped[List["Transaction"]] = relationship("Transaction", cascade="all, delete-orphan",
                                                              back_populates="category")

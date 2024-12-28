@@ -8,3 +8,8 @@ class CategoryGroup(StatesGroup):
 class TransactionGroup(StatesGroup):
     category_id: State = State()
     amount: State = State()
+
+
+class LimitsGroup(StatesGroup):
+    category_id: State = State()
+    limit_amount: State = State()

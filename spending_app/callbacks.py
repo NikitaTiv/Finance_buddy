@@ -4,21 +4,24 @@ from aiogram.filters.callback_data import CallbackData
 
 
 class ReturnCallback(CallbackData, prefix="back"):
-    """
-    Class for creating GoBack callbacks.
-    """
     direction: Optional[str]
 
 
 class ShowNextCallback(CallbackData, prefix="show_next"):
-    """
-    Class for creating GoBack callbacks.
-    """
     direction: Optional[str]
 
 
 class ShowPrevCallback(CallbackData, prefix="show_prev"):
-    """
-    Class for creating GoBack callbacks.
-    """
+    direction: Optional[str]
+
+
+class LimitCallback(CallbackData, prefix="limit"):
+    direction: Optional[str]
+
+
+class EditLimitCallback(CallbackData, prefix="edit_limit"):
+    direction: Optional[str]
+
+
+class RemoveLimitCallback(CallbackData, prefix="remove_limit"):
     direction: Optional[str]

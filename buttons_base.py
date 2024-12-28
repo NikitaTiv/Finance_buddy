@@ -13,9 +13,9 @@ class GetAttrMixin:
 
 
 class ClearCacheMeta(type):
+    no_cache_messages: list[str] = []
+
     def __new__(cls, name: str, bases: Tuple[Any], attrs: dict[str, Any]) -> 'ClearCacheMixin':
-        if not hasattr(cls, 'no_cache_messages'):
-            cls.no_cache_messages = []
         if msg := attrs.get('text'):
             cls.no_cache_messages.append(msg)
         return super().__new__(cls, name, bases, attrs)

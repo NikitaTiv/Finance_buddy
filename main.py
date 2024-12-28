@@ -4,6 +4,8 @@ import os
 import sys
 
 from aiogram import Bot, Dispatcher
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.types import Message
 from dotenv import load_dotenv
@@ -49,7 +51,8 @@ async def start_conversation(message: Message) -> None:
 
 
 async def main() -> None:
-    bot = Bot(token=os.environ.get('TOKEN'), session=SkipTelegramBadRequestSession())
+    bot = Bot(token=os.environ.get('TOKEN'), default=DefaultBotProperties(parse_mode=ParseMode.HTML),
+              session=SkipTelegramBadRequestSession())
     dp.include_routers(spending_router, report_router)
 
     await dp.start_polling(bot)

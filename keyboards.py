@@ -7,7 +7,7 @@ from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 import buttons_base as bt
-from keyboard_mixins import GoBackHeaderMixin, MainKeyboardMixin
+from keyboard_mixins import GoBackToCatsHeaderMixin, GoBackToLimitsHeaderMixin, MainKeyboardMixin
 
 
 class BaseKeyboard(ABC):
@@ -145,5 +145,9 @@ class MainReplyKeyboard(MainKeyboardMixin, BaseReplyKeyboard):
     pass
 
 
-class GoBackInlineKeyboard(GoBackHeaderMixin, BaseInlineKeyboard):
+class GoBackToCatsInlineKeyboard(GoBackToCatsHeaderMixin, BaseInlineKeyboard):
+    pass
+
+
+class GoBackToLimitsInlineKeyboard(GoBackToLimitsHeaderMixin, BaseInlineKeyboard):
     pass
