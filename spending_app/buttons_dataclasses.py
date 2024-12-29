@@ -35,14 +35,19 @@ class BackToLimitsButtonData(BaseBackDataClass):
 
 
 @dataclass
+class BackToTransactionsButtonData(BaseBackDataClass):
+    callback_data: str = 'trans'
+
+
+@dataclass
 class AddCategoryButtonData(GetAttrMixin):
-    text: str = '➕ Добавить'
+    text: str = '➕ Добавить категорию'
     callback_data: str = 'add_category'
 
 
 @dataclass
 class RemoveCategoryButtonData(GetAttrMixin):
-    text: str = '❌ Удалить'
+    text: str = '❌ Удалить категорию'
     callback_data: str = 'rem_cat'
 
 
@@ -54,3 +59,9 @@ class ShowNextCategoriesButtonData(GetAttrMixin):
 @dataclass
 class ShowPrevCategoriesButtonData(GetAttrMixin):
     text: str = 'Предыдущие категории 🔼'
+
+
+@dataclass
+class ShowLastTransactionsButtonData(GetAttrMixin):
+    text: str = 'Просмотр транзакций 💸'
+    callback_data: str = 'show_transactions'

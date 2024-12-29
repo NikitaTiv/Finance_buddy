@@ -21,7 +21,7 @@ class ClearCacheEventObserver(TelegramEventObserver):
             message_text = getattr(event.message, 'text', '')
             callback = getattr(event.callback_query, 'data', '')
             if (not message_text and not callback.startswith('amount_category')
-                or message_text in ClearCacheMeta.no_cache_messages):
+                    or message_text in ClearCacheMeta.no_cache_messages):
                 kwargs.pop('raw_state')
                 await state.clear()
         kwargs['state'] = state

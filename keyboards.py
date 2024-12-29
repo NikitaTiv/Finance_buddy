@@ -1,13 +1,14 @@
 from abc import ABC, abstractmethod
 from itertools import chain
 from sqlalchemy.orm.query import Query
-from typing import Any, Generator, Iterable, Optional
+from typing import Generator, Iterable, Optional
 
 from aiogram.types import InlineKeyboardMarkup, ReplyKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder, ReplyKeyboardBuilder
 
 import buttons_base as bt
 from keyboard_mixins import GoBackToCatsHeaderMixin, GoBackToLimitsHeaderMixin, MainKeyboardMixin
+from report_app.buttons_dataclasses import BackToReportButtonData, GetReportPerMonthButtonData
 
 
 class BaseKeyboard(ABC):
@@ -55,7 +56,7 @@ class BaseKeyboard(ABC):
         return results_qty
 
     def prepare_headers(self, db_query: Optional[Query]) -> \
-        Iterable[bt.InlineButton | bt.ReplyButton] | Generator[bt.InlineButton | bt.ReplyButton, None, None]:
+            Iterable[bt.InlineButton | bt.ReplyButton] | Generator[bt.InlineButton | bt.ReplyButton, None, None]:
         """
         Create header's buttons for a buttons panel.
 
@@ -65,7 +66,7 @@ class BaseKeyboard(ABC):
         yield from ()
 
     def prepare_content(self, db_query: Optional[Query]) -> \
-        Iterable[bt.InlineButton | bt.ReplyButton] | Generator[bt.InlineButton | bt.ReplyButton, None, None]:
+            Iterable[bt.InlineButton | bt.ReplyButton] | Generator[bt.InlineButton | bt.ReplyButton, None, None]:
         """
         Create body's buttons for a buttons panel.
 
@@ -75,7 +76,7 @@ class BaseKeyboard(ABC):
         yield from ()
 
     def prepare_footer(self, db_query: Optional[Query]) -> \
-        Iterable[bt.InlineButton | bt.ReplyButton] | Generator[bt.InlineButton | bt.ReplyButton, None, None]:
+            Iterable[bt.InlineButton | bt.ReplyButton] | Generator[bt.InlineButton | bt.ReplyButton, None, None]:
         """
         Create footer's buttons for a buttons panel.
 
@@ -143,6 +144,18 @@ class BaseReplyKeyboard(BaseKeyboard):
 
 class MainReplyKeyboard(MainKeyboardMixin, BaseReplyKeyboard):
     pass
+
+
+class GetReportPerMonthReplyKeyboard(BaseReplyKeyboard):
+    def __init__(self, month_list: Iterable[str]) -> None:
+        super().__init__()
+        self.month_list = month_list
+
+    def prepare_headers(self, db_query) -> Generator[bt.ReplyButton, None, None]:
+        yield bt.ReplyButton(**BackToReportButtonData.get_attrs())
+
+    def prepare_content(self, db_query: Optional[Query]) -> Generator[bt.ReplyButton, None, None]:
+        yield from (bt.ReplyButton(text=GetReportPerMonthButtonData.text + month) for month in self.month_list)
 
 
 class GoBackToCatsInlineKeyboard(GoBackToCatsHeaderMixin, BaseInlineKeyboard):

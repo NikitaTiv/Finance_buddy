@@ -8,7 +8,8 @@ from errors import IncorrectlyСonfiguredException
 from report_app.buttons_dataclasses import GetReportButtonData
 from settings import MAX_CATEGORY_PER_USER
 from spending_app.buttons_dataclasses import (AddCategoryButtonData, AddExpensesButtonData, BackToCatsButtonData,
-                                              BackToLimitsButtonData, LimitsButtonData, RemoveCategoryButtonData)
+                                              BackToLimitsButtonData, BackToTransactionsButtonData, LimitsButtonData,
+                                              RemoveCategoryButtonData, ShowLastTransactionsButtonData)
 from spending_app.callbacks import ReturnCallback
 
 
@@ -31,15 +32,20 @@ class GoBackToLimitsHeaderMixin(BaseBackHeaderMixin):
     BACK_DIRECTION = BackToLimitsButtonData
 
 
+class GoBackToTransactionsHeaderMixin(BaseBackHeaderMixin):
+    BACK_DIRECTION = BackToTransactionsButtonData
+
+
 class AddRemoveButtonMixin:
     def prepare_headers(self, db_query: Optional[Query]) -> Generator[bt.InlineButton, None, None]:
+        yield bt.InlineButton(**ShowLastTransactionsButtonData.get_attrs())
         qty_method = getattr(self, 'get_results_qty', None)
         if not qty_method:
             raise IncorrectlyСonfiguredException(f'{self.__class__.__name__} is incorrectly configured')
         category_qty = qty_method(db_query)
-        yield bt.InlineButton(is_applicable = category_qty < MAX_CATEGORY_PER_USER,
+        yield bt.InlineButton(is_applicable=category_qty < MAX_CATEGORY_PER_USER,
                               **AddCategoryButtonData.get_attrs())
-        yield bt.InlineButton(is_applicable = bool(category_qty), **RemoveCategoryButtonData.get_attrs())
+        yield bt.InlineButton(is_applicable=bool(category_qty), **RemoveCategoryButtonData.get_attrs())
 
 
 class NumbersMixin:
@@ -49,7 +55,7 @@ class NumbersMixin:
 
     def prepare_content(self, db_query: Optional[Query]) -> Iterable[bt.InlineButton]:
         return (bt.InlineButton(text=str(number), callback_data=f'amount_category_{number}')
-                    for number in range(1, 10))
+                for number in range(1, 10))
 
     def prepare_footer(self, db_query: Optional[Query]) -> Generator[bt.InlineButton, None, None]:
         yield bt.InlineButton(text='.', callback_data='amount_category_.')

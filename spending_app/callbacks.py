@@ -25,3 +25,7 @@ class EditLimitCallback(CallbackData, prefix="edit_limit"):
 
 class RemoveLimitCallback(CallbackData, prefix="remove_limit"):
     direction: Optional[str]
+
+
+class RemoveTransactionCallback(CallbackData, prefix="remove_transaction"):
+    direction: Optional[str]

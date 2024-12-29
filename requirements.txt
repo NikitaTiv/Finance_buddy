@@ -7,6 +7,7 @@ alembic==1.14.0
 annotated-types==0.7.0
 attrs==24.2.0
 certifi==2024.8.30
+DAWG-Python==0.7.2
 eradicate==2.3.0
 flake8==7.1.1
 flake8-eradicate==1.5.0
@@ -24,8 +25,13 @@ pycodestyle==2.12.1
 pydantic==2.8.2
 pydantic_core==2.20.1
 pyflakes==3.2.0
+pymorphy3==2.0.2
+pymorphy3-dicts-ru==2.4.417150.4580142
+python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
 sentry-sdk==2.19.0
+setuptools==75.6.0
+six==1.17.0
 SQLAlchemy==2.0.35
 typing_extensions==4.12.2
 urllib3==2.2.3

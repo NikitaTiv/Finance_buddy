@@ -38,7 +38,7 @@ class ReportFileGenerator:
         return [
             'Ваши расходы:',
             *(f'{category:.<20}{amount}{self.prepare_limit_data(limit)}'
-                  for category, limit, amount in self.category_data),
+              for category, limit, amount in self.category_data),
             f'Итого: {total_amount}'
         ]
 
@@ -65,3 +65,13 @@ class ReportFileGenerator:
         img.save(img_bytes, format='png')
         img_bytes.seek(0)
         return types.BufferedInputFile(img_bytes.read(), filename="buffer img.jpg")
+
+
+def get_month_number(month_name: str) -> int:
+    months = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь",
+              "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"]
+
+    try:
+        return months.index(month_name) + 1
+    except ValueError:
+        return

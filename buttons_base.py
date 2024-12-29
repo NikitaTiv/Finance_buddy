@@ -1,4 +1,3 @@
-from collections import defaultdict
 from typing import Any, Tuple
 
 from aiogram.types import InlineKeyboardButton, KeyboardButton

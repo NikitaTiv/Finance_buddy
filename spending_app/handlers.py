@@ -3,18 +3,22 @@ import re
 
 from aiogram import F, Router, html
 from aiogram.types import CallbackQuery, Message
-from sqlalchemy import insert
+from sqlalchemy import exists, insert
 from sqlalchemy.orm import Session
 from aiogram.fsm.context import FSMContext
 
 from database.engine import engine
 import keyboards as main_kb
 from spending_app.buttons_dataclasses import (AddCategoryButtonData, AddExpensesButtonData, BackToCatsButtonData,
-                                              BackToLimitsButtonData, LimitsButtonData, RemoveCategoryButtonData)
+                                              BackToLimitsButtonData, BackToTransactionsButtonData, LimitsButtonData,
+                                              RemoveCategoryButtonData, ShowLastTransactionsButtonData)
 from spending_app.consts import ALLOWED_CATEGORY_LENGHT, GREETING_SPEND_APP_MESSAGE
-from spending_app.callbacks import EditLimitCallback, LimitCallback, RemoveLimitCallback, ReturnCallback, ShowNextCallback, ShowPrevCallback
+from spending_app.callbacks import (EditLimitCallback, LimitCallback, RemoveLimitCallback, RemoveTransactionCallback,
+                                    ReturnCallback, ShowNextCallback, ShowPrevCallback)
+from spending_app.filters import RemoveTransactionFilter
 from spending_app.keyboards import (CategoryInlineKeyboardWithAddAndRemove, LimitCategoryInlineKeyboard,
-                                    NumberInlineKeyboard, RemoveCategoryInlineKeyboard, ViewLimitInlineKeyboard)
+                                    NumberInlineKeyboard, RemoveCategoryInlineKeyboard, RemoveTransactionInlineKeyboard,
+                                    TransactionInlineKeyboard, ViewLimitInlineKeyboard)
 from spending_app.models import Category, Transaction
 from spending_app.schemas import CheckLimitValueSchema
 from spending_app.state_groups import CategoryGroup, LimitsGroup, TransactionGroup
@@ -26,6 +30,7 @@ spending_router = Router()
 
 @spending_router.message(F.text == AddExpensesButtonData.text)
 @spending_router.callback_query(ReturnCallback.filter(F.direction == BackToCatsButtonData.callback_data))
+@spending_router.callback_query(ReturnCallback.filter(F.direction == BackToTransactionsButtonData.callback_data))
 @spending_router.callback_query(ShowNextCallback.filter(F.direction == BackToCatsButtonData.callback_data))
 @spending_router.callback_query(ShowPrevCallback.filter(F.direction == BackToCatsButtonData.callback_data))
 async def choose_category(request: Message | CallbackQuery) -> None:
@@ -89,7 +94,7 @@ async def add_transaction(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(TransactionGroup.amount)
     await callback.answer()
     await callback.message.edit_text('Введите сумму транзакции.',
-                                  reply_markup=await NumberInlineKeyboard().release_keyboard())
+                                     reply_markup=await NumberInlineKeyboard().release_keyboard())
 
 
 @spending_router.callback_query(F.data.startswith('amount_category_'))
@@ -109,12 +114,11 @@ async def get_transaction_amount(callback: CallbackQuery, state: FSMContext) -> 
             session.commit()
 
         await state.clear()
-        return Response(alert='Транзакция успешно записана.', message=GREETING_SPEND_APP_MESSAGE, \
-            keyboard=CategoryInlineKeyboardWithAddAndRemove(callback.from_user, callback.data))
+        return Response(alert='Транзакция успешно записана.', message=GREETING_SPEND_APP_MESSAGE,
+                        keyboard=CategoryInlineKeyboardWithAddAndRemove(callback.from_user, callback.data))
 
     Response = namedtuple('PreparedResponse', ('alert', 'message', 'keyboard'),
-        defaults=('', 'Введите значение транзакции.\nПроможуточный итог: {}', NumberInlineKeyboard())
-    )
+                          defaults=('', 'Введите значение транзакции.\nПроможуточный итог: {}', NumberInlineKeyboard()))
     data = await state.get_data()
     current_amount = data.get('amount', '')
     user_input = callback.data.split('_')[2]
@@ -178,22 +182,22 @@ async def edit_limit(callback: CallbackQuery, state: FSMContext) -> None:
     await state.update_data(category_id=callback.data.split(':')[1])
     await state.set_state(LimitsGroup.limit_amount)
     await callback.answer()
-    await callback.message.answer("Введите значение для лимита", reply_markup=await \
-                                  main_kb.GoBackToLimitsInlineKeyboard().release_keyboard())
+    await callback.message.edit_text("Введите значение для лимита", reply_markup=await
+                                     main_kb.GoBackToLimitsInlineKeyboard().release_keyboard())
 
 
 @spending_router.message(LimitsGroup.limit_amount)
 async def save_new_limit_value(message: Message, state: FSMContext) -> None:
     if not is_valid_input(CheckLimitValueSchema, message.text):
-        return await message.answer('Неправильное значение лимита', reply_markup=await
-                                    main_kb.GoBackToLimitsInlineKeyboard().release_keyboard())
+        return await message.edit_text('Неправильное значение лимита', reply_markup=await
+                                       main_kb.GoBackToLimitsInlineKeyboard().release_keyboard())
     data = await state.get_data()
     with Session(engine) as session:
         obj = session.query(Category).filter(Category.id == data['category_id']).first()
         obj.limit = message.text
         session.commit()
-    await message.answer('Здесь вы можете управлять лимитами на ваши категории', reply_markup=await
-                         LimitCategoryInlineKeyboard(message.from_user, message.text).release_keyboard())
+    await message.edit_text('Здесь вы можете управлять лимитами на ваши категории', reply_markup=await
+                            LimitCategoryInlineKeyboard(message.from_user, message.text).release_keyboard())
 
 
 @spending_router.callback_query(RemoveLimitCallback.filter(F.direction.isdigit()))
@@ -203,6 +207,46 @@ async def remove_limit(callback: CallbackQuery) -> None:
         obj.limit = None
         session.commit()
     await callback.answer('Лимит удален.')
-    await callback.message.answer('Здесь вы можете управлять лимитами на ваши категории', reply_markup=await
-                                  LimitCategoryInlineKeyboard(callback.from_user, callback.data).release_keyboard())
+    await callback.message.edit_text('Здесь вы можете управлять лимитами на ваши категории', reply_markup=await
+                                     LimitCategoryInlineKeyboard(callback.from_user, callback.data).release_keyboard())
 
+
+@spending_router.callback_query(F.data == ShowLastTransactionsButtonData.callback_data)
+async def show_transactions(callback: CallbackQuery) -> None:
+    user_id = callback.from_user.id
+    await callback.answer('')
+    await callback.message.edit_text('Список ваших последних 10 транзаций.\nНажмите на транзакцию для удаления.',
+                                     reply_markup=await TransactionInlineKeyboard(user_id).release_keyboard())
+
+
+@spending_router.callback_query(RemoveTransactionCallback.filter(F.direction.isdigit()))
+async def check_transaction(callback: CallbackQuery) -> None:
+    await callback.answer('')
+    await callback.message.edit_text(
+        'Вы хотите удалить транзацию?', reply_markup=await
+        RemoveTransactionInlineKeyboard(transaction_id=callback.data.split(':')[1]).release_keyboard()
+    )
+
+
+@spending_router.callback_query(RemoveTransactionFilter())
+async def handle_remove_transaction_request(callback: CallbackQuery) -> None:
+    transaction_id, user_choice = callback.data.split(':')[1].split('_')
+    user_id = callback.from_user.id
+    if user_choice == 'no':
+        await callback.answer('')
+        return await callback.message.edit_text(
+            'Список ваших последних 10 транзаций.\nНажмите на транзакцию для удаления.', reply_markup=await
+            TransactionInlineKeyboard(user_id).release_keyboard())
+    with Session(engine) as session:
+        exists_query = (session.query(exists().where(Transaction.id == transaction_id,
+                                                     Transaction.category.has(Category.user_id == user_id))).scalar())
+        if exists_query:
+            obj = session.query(Transaction).filter(Transaction.id == transaction_id).first()
+            session.delete(obj)
+            session.commit()
+            await callback.answer('Транзакция удалена.')
+        else:
+            await callback.answer('Ошибка при удалении')
+    await callback.message.edit_text(
+        'Список ваших последних 10 транзаций.\nНажмите на транзакцию для удаления.', reply_markup=await
+        TransactionInlineKeyboard(user_id).release_keyboard())

@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 
-from aiogram import Bot, Dispatcher
+from aiogram import F, Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from database.engine import engine
 from database.model_base import Base
 import keyboards as kb
+from report_app.buttons_dataclasses import BackToReportButtonData
 from rewritten_base_classes import ClearCacheDispatcher
 from sessions import SkipTelegramBadRequestSession
 from settings import SENTRY_TOKEN
@@ -39,6 +40,7 @@ dp.callback_query.middleware(UserRequiredMiddleware())
 
 
 @dp.message(CommandStart())
+@dp.message(F.text == BackToReportButtonData.text)
 async def start_conversation(message: Message) -> None:
     user_id = message.from_user.id
     with Session(engine) as session:  # TODO create a async context manager for adding users

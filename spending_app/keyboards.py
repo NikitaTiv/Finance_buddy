@@ -7,11 +7,12 @@ import buttons_base as bt
 from database.engine import engine
 from keyboards import BaseInlineKeyboard
 from settings import MAX_CATEGORY_PER_USER, MAX_CATEGORY_PER_PAGE
-from keyboard_mixins import AddRemoveButtonMixin, GoBackToCatsHeaderMixin, GoBackToLimitsHeaderMixin, NumbersMixin
-from spending_app.buttons_dataclasses import (BackToLimitsButtonData, LimitsButtonData, RemoveCategoryButtonData, ShowNextCategoriesButtonData,
-                                              ShowPrevCategoriesButtonData)
-from spending_app.callbacks import (EditLimitCallback, LimitCallback, RemoveLimitCallback, ShowNextCallback,
-                                    ShowPrevCallback)
+from keyboard_mixins import (AddRemoveButtonMixin, GoBackToCatsHeaderMixin, GoBackToLimitsHeaderMixin,
+                             GoBackToTransactionsHeaderMixin, NumbersMixin)
+from spending_app.buttons_dataclasses import (BackToLimitsButtonData, LimitsButtonData, RemoveCategoryButtonData,
+                                              ShowNextCategoriesButtonData, ShowPrevCategoriesButtonData)
+from spending_app.callbacks import (EditLimitCallback, LimitCallback, RemoveLimitCallback, RemoveTransactionCallback,
+                                    ShowNextCallback, ShowPrevCallback)
 from spending_app.models import Category, Transaction
 from users_app.models import User
 
@@ -78,7 +79,7 @@ class CategoryInlineKeyboardWithAddAndRemove(AddRemoveButtonMixin, CategoryInlin
     def number_per_row(self) -> tuple[int]:
         category_qty = self.get_results_qty(self.db_query)
         if 0 < category_qty < MAX_CATEGORY_PER_USER:
-            return (2, 1)
+            return (1, 2, 1)
         return (1,)
 
 
@@ -94,8 +95,8 @@ class NumberInlineKeyboard(NumbersMixin, GoBackToCatsHeaderMixin, BaseInlineKeyb
 
 class LimitCategoryInlineKeyboard(CategoryInlineKeyboard):
     def prepare_content(self, db_query: Query) -> Iterable[bt.InlineButton]:
-        return (bt.InlineButton(text=f'{row.name} - {row.limit or "❌"}', callback_data= \
-                                LimitCallback(direction=str(row.id)).pack()) for row in self.limit_db_query(db_query))
+        return (bt.InlineButton(text=f'{row.name} - {row.limit or "❌"}', callback_data=LimitCallback(
+            direction=str(row.id)).pack()) for row in self.limit_db_query(db_query))
 
 
 class ViewLimitInlineKeyboard(GoBackToLimitsHeaderMixin, BaseInlineKeyboard):
@@ -104,7 +105,41 @@ class ViewLimitInlineKeyboard(GoBackToLimitsHeaderMixin, BaseInlineKeyboard):
         self.category_id = category_id
 
     def prepare_content(self, db_query: Optional[Query]) -> Generator[bt.InlineButton, None, None]:
-        yield bt.InlineButton(text='Редактировать лимит 📝', callback_data= \
-                              EditLimitCallback(direction=str(self.category_id)).pack())
-        yield bt.InlineButton(text='Удалить лимит 🗑', callback_data= \
-                              RemoveLimitCallback(direction=str(self.category_id)).pack())
+        yield bt.InlineButton(text='Редактировать лимит 📝', callback_data=EditLimitCallback(
+            direction=str(self.category_id)).pack())
+        yield bt.InlineButton(text='Удалить лимит 🗑', callback_data=RemoveLimitCallback(
+            direction=str(self.category_id)).pack())
+
+
+class TransactionInlineKeyboard(GoBackToTransactionsHeaderMixin, BaseInlineKeyboard):
+    def __init__(self, user_id: str) -> None:
+        super().__init__()
+        self.user_id = user_id
+
+    async def make_db_query(self) -> Query:
+        with Session(engine) as session:
+            return session.query(Transaction.id, Transaction.amount, Category.name) \
+                .join(Category) \
+                .filter(Category.user_id == self.user_id) \
+                .order_by(Transaction.id.desc()) \
+                .limit(10)
+
+    def prepare_content(self, db_query: Query) -> Iterable[bt.InlineButton]:
+        return (bt.InlineButton(text=f'{row[2]} - {row[1]}', callback_data=RemoveTransactionCallback(
+            direction=str(row[0])).pack()) for row in db_query.all())
+
+
+class RemoveTransactionInlineKeyboard(BaseInlineKeyboard):
+    def __init__(self, transaction_id: str) -> None:
+        super().__init__()
+        self.transaction_id = transaction_id
+
+    @property
+    def number_per_row(self) -> tuple[int]:
+        return (2,)
+
+    def prepare_content(self, db_query: Query) -> Generator[bt.InlineButton, None, None]:
+        yield bt.InlineButton(text='✅ Да', callback_data=RemoveTransactionCallback(
+            direction=f'{self.transaction_id}_yes').pack())
+        yield bt.InlineButton(text='⛔️ Нет', callback_data=RemoveTransactionCallback(
+            direction=f'{self.transaction_id}_no').pack())
