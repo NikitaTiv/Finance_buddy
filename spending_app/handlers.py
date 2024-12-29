@@ -196,8 +196,9 @@ async def save_new_limit_value(message: Message, state: FSMContext) -> None:
         obj = session.query(Category).filter(Category.id == data['category_id']).first()
         obj.limit = message.text
         session.commit()
-    await message.edit_text('Здесь вы можете управлять лимитами на ваши категории', reply_markup=await
-                            LimitCategoryInlineKeyboard(message.from_user, message.text).release_keyboard())
+    await state.clear()
+    await message.answer('Здесь вы можете управлять лимитами на ваши категории', reply_markup=await
+                         LimitCategoryInlineKeyboard(message.from_user, message.text).release_keyboard())
 
 
 @spending_router.callback_query(RemoveLimitCallback.filter(F.direction.isdigit()))
