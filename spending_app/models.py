@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 import decimal
 from typing import List
 from sqlalchemy import DateTime, String, DECIMAL, ForeignKey
@@ -28,7 +27,7 @@ class Transaction(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     amount: Mapped[decimal.Decimal] = mapped_column(DECIMAL(8, 2))
-    created_at: Mapped[DateTime] = mapped_column(DateTime, default=datetime.now(timezone.utc))
+    created_at: Mapped[DateTime] = mapped_column(DateTime)
     category_id = mapped_column(ForeignKey('category.id'))
 
     category: Mapped[Category] = relationship("Category", back_populates="transactions")

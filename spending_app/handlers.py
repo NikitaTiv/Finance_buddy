@@ -1,4 +1,5 @@
 from collections import namedtuple
+from datetime import datetime
 import re
 
 from aiogram import F, Router, html
@@ -107,7 +108,7 @@ async def get_transaction_amount(callback: CallbackQuery, state: FSMContext) -> 
             return Response(message='Cообщение устарело и помещено в архив.\nВвод невозможен.')
         if not re.match(r'^\d{1,6}(\.\d{0,2})?$', amount):
             return Response(alert='Неправильный формат транзакции.')
-
+        data.update({'created_at': datetime.now()})
         with Session(engine) as session:
             transaction = Transaction(**data)
             session.add(transaction)
